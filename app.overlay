@@ -1,0 +1,23 @@
+/ {
+	chosen {
+		zephyr,console = &uart1;
+		zephyr,shell-uart = &uart1;
+	};
+
+	aliases {
+		io-wire = &uart0;
+		cli-uart = &uart1;
+	};
+};
+
+&uart0 {
+	status = "okay";
+	current-speed = <115200>;
+	label = "IO_WIRE";
+};
+
+&uart1 {
+	status = "okay";
+	current-speed = <115200>;
+	label = "CLI_UART";
+};

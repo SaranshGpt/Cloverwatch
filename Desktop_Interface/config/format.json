@@ -1,0 +1,10 @@
+{
+  "length_bytes": 2,
+  "error_block_size": 255,
+  "block_resilience": 2,
+  "crc_length": 2,
+  "endianness": "little",
+  "header_byte": "\\xBA",
+  "footer_byte": "\\xBF",
+  "escape_byte": "\\xBE"
+}
