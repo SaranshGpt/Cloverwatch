@@ -16,7 +16,7 @@ namespace Cloverwatch
 {
 
     namespace TaskManagerConfig {
-        constexpr int STACK_SIZE = 2*1024;
+        constexpr int STACK_SIZE = 1024;
     }
 
     class TaskManager {

@@ -6,6 +6,8 @@
 
 namespace Cloverwatch {
 
+    K_KERNEL_STACK_ARRAY_DEFINE(ThreadStacks, 5, TaskManagerConfig::STACK_SIZE);
+
     TaskManager TaskManager::instance = TaskManager();
 
     static void add_task_delayed(TaskManager::DelayedContext *context, k_work_q* work_q, k_timeout_t delay);
@@ -53,7 +55,7 @@ namespace Cloverwatch {
 
         for (auto &[work_q, stack]: work_queues) {
 
-            stack = k_thread_stack_alloc(TaskManagerConfig::STACK_SIZE, 0);
+            stack = ThreadStacks[ind];
 
             k_work_queue_init(&work_q);
             k_work_queue_start(&work_q, stack, TaskManagerConfig::STACK_SIZE, priority_values[ind++], nullptr);

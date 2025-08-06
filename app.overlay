@@ -1,23 +1,15 @@
 / {
-	chosen {
-		zephyr,console = &uart1;
-		zephyr,shell-uart = &uart1;
-	};
 
 	aliases {
-		io-wire = &uart0;
-		cli-uart = &uart1;
+		io-wire = &uart1;
+		cli-wire = &uart0;
 	};
 };
 
 &uart0 {
-	status = "okay";
-	current-speed = <115200>;
-	label = "IO_WIRE";
+	compatible = "zephyr,native-pty-uart";
 };
 
 &uart1 {
 	status = "okay";
-	current-speed = <115200>;
-	label = "CLI_UART";
 };

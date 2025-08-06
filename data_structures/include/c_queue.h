@@ -2,42 +2,92 @@
 #define CQUEUE_H
 
 #include <array>
-#include <memory>
 #include <atomic>
 #include <optional>
+#include <vector>
+
+#include "c_types.h"
+#include "ptr_types.h"
+#include "c_mutex.h"
+
+#include <zephyr/kernel.h>
 
 namespace Cloverwatch {
 
-    template <typename T, uint16_t size>
-    class CQueue_concurrent {
+    template <typename T, uint16_t capacity>
+    class CQueue_concurrent_SPSC {
     public:
 
-        bool push(T&& t);
         std::optional<T> pop();
+        bool push(T&& val);
 
-        // Fixed: atomic-safe methods
-        bool empty() const { 
-            return front.load(std::memory_order_acquire) == 
-                   back.load(std::memory_order_acquire); 
-        }
-        
-        int capacity_remaining() const {
-            auto f = front.load(std::memory_order_acquire);
-            auto b = back.load(std::memory_order_acquire);
-            return (size - 1) - ((b - f + size) % size);
-        }
+        inline uint16_t remaining_capacity() const;
+        inline uint16_t size() const;
+
+        inline bool empty() const;
+        inline bool full() const;
 
     private:
 
-        std::atomic<int> front{0};
-        std::atomic<int> back{0};
-        std::array<T, size> queue;
+        std::array<T, capacity> queue;
+        std::atomic<uint16_t> head = 0;
+        std::atomic<uint16_t> tail = 0;
 
-        int acquire_front_position();
-        int acquire_back_position();
+        static_assert(capacity > 0, "Invalid value of size");
+
+    };
+
+    template <uint16_t capacity>
+    class CByteQueue_SPSC {
+    public:
+
+        constexpr CByteQueue_SPSC() = default;
+
+        bool push(Byte byte);
+        bool push(ReadVector<Byte> bytes);
+
+        std::optional<Byte> pop();
+        void pop(WriteVector<Byte> buffer);
+
+        inline uint16_t remaining_capacity() const;
+        inline uint16_t size() const;
+
+        inline bool empty() const;
+        inline bool full() const;
+
+    private:
+
+        // ReSharper disable once CppUninitializedNonStaticDataMember
+        uint8_t _ring_buffer_data[capacity];
+        ring_buf ring_buffer = {
+            .buffer = _ring_buffer_data,
+            .size = capacity
+        };
+
+    };
+
+    template <typename T, uint16_t capacity>
+    class CQueue_concurrent_MPMC {
+    public:
+
+        void init();
+
+        bool push(T&& val);
+        void pop(WriteVector<T> buffer);
+
+    private:
+
+        std::array<T, capacity> queue;
+
+        struct k_mutex mutex;
+
+        int head = 0;
+        int tail = 0;
 
     };
 
 }
+
+#include "../src/c_queue.tpp"
 
 #endif //CQUEUE_H

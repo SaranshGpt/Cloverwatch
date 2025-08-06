@@ -32,6 +32,18 @@ class PacketConfig:
         with open(file_path, "r") as file:
             config = json.load(file)
 
+        def to_bytes(val: str) -> bytes:
+            if val.startswith("0x"):
+                return bytes([int(val, 16)])
+            elif val.startswith("b'") or val.startswith('b"'):
+                return eval(val)  # Use carefully; assumes trusted input
+            else:
+                return bytes(val, encoding='utf-8')
+    
+        config["header_byte"] = to_bytes(config["header_byte"])
+        config["footer_byte"] = to_bytes(config["footer_byte"])
+        config["escape_byte"] = to_bytes(config["escape_byte"])
+
         return PacketConfig(**config)
 
     def export_to_json(self, file_path: str):
@@ -41,33 +53,28 @@ class PacketConfig:
 
 class Packet:
 
-    def crc(self, data: bytes)-> bytes:
+    def crc(self, data: bytearray)-> bytes:
 
         config = self.config
-
-        crc = bytes(config.crc_length)
-
+        crc = bytearray(config.crc_length)
         for i in range(0, len(data), config.crc_length):
-            for j in range(config.crc_length):
-                crc[j] ^= data[i+j]
+            chunk = data[i:i + config.crc_length]
+            for j in range(len(chunk)):
+                crc[j] ^= chunk[j]
+        return bytes(crc)
 
         return crc
 
     def add_escape(self, data: bytes)-> bytes:
 
         config = self.config
-
-        new_data = bytes()
-
-        for i in range(len(data)):
-            byte = data[i]
-
-            if byte == config.header_byte or byte == config.footer_byte or byte == config.escape_byte:
-                new_data += config.escape_byte
-
-            new_data += byte
-
-        return new_data
+        escaped = bytearray()
+        reserved = {config.header_byte, config.footer_byte, config.escape_byte}
+        for byte in data:
+            if bytes([byte]) in reserved:
+                escaped += config.escape_byte
+            escaped.append(byte)
+        return bytes(escaped)
 
 
 
@@ -75,23 +82,33 @@ class Packet:
         self.config = config
         self.data = data
 
-        padding_len = len(data) % config.error_block_size
-
+        # Padding to align with error block size
+        padding_len = (config.error_block_size - len(data) % config.error_block_size) % config.error_block_size
         self.padding = bytes(padding_len)
 
+        # Internal length for the original data
         self.length_internal = len(data).to_bytes(config.length_bytes, byteorder=config.endianness)
 
+        # Reed-Solomon encoding
         self.codec = reedsolo.RSCodec(config.block_resilience, config.error_block_size)
-
-        self.payload = self.length_internal + self.data + self.padding
-
+        self.payload = self.length_internal + data + self.padding
         self.payload_encoded = self.codec.encode(self.payload)
 
-        self.length_external = len(self.payload).to_bytes(config.length_bytes, byteorder=config.endianness)
+        # External length for the encoded payload
+        self.length_external = len(self.payload_encoded).to_bytes(config.length_bytes, byteorder=config.endianness)
 
-        self.crc = self.crc(self.length_external + self.payload)
+        # CRC for encoded payload
+        self.crc = self.crc(self.length_external + self.payload_encoded)
 
-        self.packet = config.header_byte + config.header_byte + self.add_escape(self.length_external + self.payload + self.crc) + config.footer_byte + config.footer_byte
+        # Assemble the final packet with header/footer/escape
+        escaped = self.add_escape(self.length_external + self.payload_encoded + self.crc)
+        self.packet = (
+            config.header_byte +
+            config.header_byte +
+            escaped +
+            config.footer_byte +
+            config.footer_byte
+        )
 
     def packet_with_errors(self, max_errors: int) -> bytes:
         packet = bytearray(self.packet)

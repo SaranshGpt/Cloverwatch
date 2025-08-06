@@ -8,12 +8,12 @@ target_include_directories(
 )
 
 target_sources(Serial_IO PRIVATE
-    src/serial_io.cpp
+    src/serial_io.cpp compile_time_init/serial_template_config.cpp
 )
 
 target_link_libraries(
         Serial_IO PRIVATE
         zephyr_interface
-        DataStructures
         TaskManager
+        Logger
 )
