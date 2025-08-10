@@ -3,30 +3,148 @@
 //
 
 #include "validator.h"
+
+#include <logger.h>
+
 #include "../../data_structures/include/ptr_types.h""
 
 namespace Cloverwatch {
 
-    template <ValidatorConfig config, uint16_t buffer_size, BlockValidationFunc validation_func>
-    void BlockValidator<config, buffer_size, validation_func>::add_bytes(ReadVector<Byte> message_rx, WriteVector<Byte> message_tx) {
+    static inline bool is_special(const Byte &byte, const ValidatorConfig &config) {
+        return
+            (byte == config.escape_byte) ||
+            (byte == config.header_byte) ||
+            (byte == config.footer_byte);
+    }
+
+    template <uint16_t buffer_size, BlockValidationFunc validation_func>
+    void BlockValidator<buffer_size, validation_func>::set_validator_config(ValidatorConfig config) {
+        this->config = config;
+    }
+
+    template <uint16_t buffer_size, BlockValidationFunc validation_func>
+    void BlockValidator<buffer_size, validation_func>::reset() {
+        curr_state = State::HEADER;
+        bytes_since_last_state_change = 0;
+        escape_expected = false;
+        expected_length = 0;
+        buffer.clear();
+    }
+
+    template <uint16_t buffer_size, BlockValidationFunc validation_func>
+    void BlockValidator<buffer_size, validation_func>::append_length_byte(Byte byte) {
+
+        switch (config.endianness) {
+            case Endianness::LITTLE: {
+                expected_length |= static_cast<uint64_t>(byte) << (8 * bytes_since_last_state_change);
+                return;
+            }
+            case Endianness::BIG: {
+                expected_length |= static_cast<uint64_t>(byte) << (8 * (config.length_size - bytes_since_last_state_change - 1));
+                return;
+            }
+        }
+
+    }
+
+    template <uint16_t buffer_size, BlockValidationFunc validation_func>
+    void BlockValidator<buffer_size, validation_func>::add_bytes(ReadVector<Byte> message_rx, WriteVector<Byte> message_tx) {
+
+        auto escape_needed = [this](Byte byte) {
+            return (curr_state != State::HEADER && curr_state != State::FOOTER) && (byte == config.header_byte || byte == config.footer_byte || byte == config.escape_byte);
+        };
+
+        auto set_state = [this](State state) {
+            curr_state = state;
+            bytes_since_last_state_change = 0;
+        };
 
         for(int i = 0; i < message_rx.len; i++) {
 
-            Byte curr_byte = message_rx[i];
+            auto byte = message_rx.ptr.ptr[i];
+
+            if (escape_expected) {
+                if (byte == config.escape_byte) {
+                    escape_expected = false;
+                }
+                else {
+                    reset();
+                    continue;
+                }
+            }
+
+            escape_expected = escape_needed(byte);
 
             switch (curr_state) {
+                case State::HEADER: {
+                    if (byte != config.header_byte) {
+                        reset();
+                        continue;
+                    }
 
-            case State::HEADER:
+                    bytes_since_last_state_change++;
 
+                    if (bytes_since_last_state_change == config.header_size)
+                        set_state(State::LENGTH);
 
+                    break;
+                }
+                case State::LENGTH: {
+                    append_length_byte(byte);
+                    bytes_since_last_state_change++;
+                    if (bytes_since_last_state_change == config.length_size) {
 
-            case State::LENGTH:
+                        if (expected_length > buffer.capacity) {
+                            Logger<ModuleId::VALIDATION_MODULE>::log(ReadPtr<char>("Expected length exceeded buffer capacity. Discarding packet"), LogLevel::WARNING);
+                            reset();
+                            continue;
+                        }
+                        else {
+                            set_state(State::PAYLOAD);
+                        }
+                    }
+                    break;
+                }
+                case State::PAYLOAD: {
+                    buffer.push_back(byte);
+                    bytes_since_last_state_change++;
+                    if (bytes_since_last_state_change == expected_length)
+                        set_state(State::FOOTER);
+                    break;
+                }
+                case State::FOOTER: {
+                    if (byte != config.footer_byte) {
+                        reset();
+                        continue;
+                    }
 
-            case State::PAYLOAD:
+                    bytes_since_last_state_change++;
 
-            case State::FOOTER:
+                    if (bytes_since_last_state_change == config.footer_size) {
 
-            }
+                        bool valid;
+
+                        if constexpr (validation_func != nullptr)
+                            valid = validation_func(buffer.to_WriteVector());
+                        else
+                            valid = true;
+
+                        if (valid) {
+                            for (int i=0; i<buffer.len; i++) {
+                                message_tx[i] = buffer[i];
+                            }
+                            message_tx.len = buffer.len;
+                        }
+                        else {
+                            Logger<ModuleId::VALIDATION_MODULE>::log(ReadPtr<char>("Validation failed. Discarding packet"), LogLevel::WARNING);
+                        }
+
+                        reset();
+                    }
+
+                }
+
+            };
 
         }
 

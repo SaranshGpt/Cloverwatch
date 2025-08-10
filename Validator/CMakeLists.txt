@@ -23,4 +23,5 @@ target_sources(
 target_link_libraries(
         Validator PRIVATE
         Logger
+        zephyr_interface
 )

@@ -10,5 +10,5 @@ add_subdirectory(Validator)
 
 target_sources(app PRIVATE main.cpp)
 target_link_libraries(app PRIVATE
-    Serial_IO TaskManager Logger
+    Serial_IO TaskManager Logger Validator
 )

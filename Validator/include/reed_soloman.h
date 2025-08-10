@@ -11,27 +11,23 @@
 #include "../../data_structures/include/ptr_types.h"
 
 #include "ssfrs.h"
+#include "../../data_structures/include/c_types.h"
 
 namespace Cloverwatch {
 
-    enum class RSResult {
-        SUCCESS = 0,
-        DECODE_FAIL,
-        CRC_FAIL
-    };
+    namespace RS_Validator {
 
-    template <uint16_t chunk_size, uint8_t max_symbols>
-    class RS_Validator {
-
-    public:
-
+        template <uint16_t chunk_size, uint8_t max_symbols>
         bool decode(WriteVector<Byte> message_rx) {
-            int rx_len = message_rx.len;
-            bool decode_res = SSFRSDecode(message_rx.ptr.ptr, rx_len, &message_rx.len, max_symbols, chunk_size);
-            return decode_res && validate_crc<uint32_t>(message_rx);
-        }
+            uint16_t rx_len = message_rx.len;
+            bool decode_res = SSFRSDecode(reinterpret_cast<uint8_t*>(message_rx.data()), message_rx.len, &rx_len, max_symbols, chunk_size);
+            message_rx.len = rx_len;
 
-    };
+            return decode_res && validate_crc<uint32_t>(
+                ReadVector<Byte>(message_rx.data(), message_rx.capacity, rx_len)
+            );
+        }
+    }
 
 }
 

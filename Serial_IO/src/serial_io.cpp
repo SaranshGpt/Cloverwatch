@@ -20,7 +20,9 @@ namespace Cloverwatch {
 
         Buffer<buffer_size> buffer;
 
-        This_Type::Instance().validation_queue.pop(
+        auto instance = This_Type::Instance();
+
+        instance.validation_queue.pop(
             WriteVector<Byte>(
                 buffer.buffer.data(),
                 buffer_size
@@ -31,13 +33,13 @@ namespace Cloverwatch {
         Buffer<packet_size> packet_buffer;
         Buffer<packet_size> transmit_buffer;
 
-        This_Type::Instance().validation_func(buffer.to_ReadVector(), user_data, packet_buffer.to_WriteVector(), transmit_buffer.to_WriteVector());
+        instance.validation_func(buffer.to_ReadVector(), user_data, packet_buffer.to_WriteVector(), transmit_buffer.to_WriteVector());
 
         if (transmit_buffer.size > 0)
             transmit(packet_buffer);
 
         if (packet_buffer.size > 0)
-            process_queue.push(packet_buffer);
+            instance.process_queue.push(packet_buffer);
 
     }
 
@@ -123,8 +125,8 @@ namespace Cloverwatch {
     template <const device* dev, uint16_t buffer_size, uint16_t packet_size, uint8_t num_packet_buffers>
     void Serial_DMAasync<dev, buffer_size, packet_size, num_packet_buffers>::transmit(Buffer<packet_size>& bytes) {
 
-        uart_tx(dev, bytes.buffer.data(), bytes.size, K_NO_WAIT);
-
+        int res = uart_tx(dev, reinterpret_cast<uint8_t*>(bytes.buffer.data()), bytes.size, K_NO_WAIT);
+        //TODO: Add Error handling
     }
 
 }

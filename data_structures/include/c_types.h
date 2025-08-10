@@ -9,6 +9,8 @@
 #include <cstddef>
 #include <string.h>
 
+#include "ptr_types.h"
+
 namespace Cloverwatch {
 
     template <PtrIntent intent, typename T>
@@ -38,6 +40,17 @@ namespace Cloverwatch {
         void clear() {
             len = 0;
         }
+
+        constexpr T* data() { return ptr.ptr; }
+        constexpr const T* data() const { return ptr.ptr; }
+        constexpr T& operator[](size_t index) { return ptr[index]; }
+        constexpr const T& operator[](size_t index) const { return ptr[index]; }
+        constexpr T* begin() { return ptr.ptr; }
+        constexpr const T* begin() const { return ptr.ptr; }
+        constexpr T* end() { return ptr.ptr + len; }
+        constexpr const T* end() const { return ptr.ptr + len; }
+        constexpr bool empty() const { return len == 0; }
+        constexpr size_t size() const { return len; }
     };
 
     template <typename T>
@@ -55,14 +68,14 @@ namespace Cloverwatch {
 
     using Byte = std::byte;
 
-    template <PtrIntent intent>
+    template <PtrIntent intent = PtrIntent::READONLY>
     IntentVector<intent, char> intent_string(char* string) {
 
         size_t size = strlen(string) + 1;
         return IntentVector<intent, char>(string, size);
     }
 
-    template <PtrIntent intent>
+    template <PtrIntent intent = PtrIntent::READONLY>
     IntentVector<intent, char> intent_string(const char* string) {
 
         size_t size = strlen(string) + 1;

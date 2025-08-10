@@ -7,12 +7,25 @@
 #include "task_manager.h"
 #include "data_structures/include/module_ids.h"
 
+#include "Validator/include/validator.h"
+#include "Validator/include/reed_soloman.h"
+
 namespace Cloverwatch {
 
     using Serial_IO_Wire = Serial_DMAasync<DEVICE_DT_GET(DT_NODELABEL(uart1)), 1024, 1024, 4>;
 
-    std::optional<Buffer<1024>> validation_func(ReadVector<Byte> bytes, WritePtr<void> user_data) {
-        return Buffer<1024>();
+    using MainValidator = BlockValidator<2048, RS_Validator::decode<255, 4>>;
+
+    void validation_func(ReadVector<Byte> bytes, WritePtr<void> user_data, WriteVector<Byte> transmit_data, WriteVector<Byte> completed_packet) {
+
+        auto validator = static_cast<MainValidator>(user_data.ptr());
+
+        validator.add_bytes(bytes, transmit_data);
+
+        if (transmit_data.len > 0)
+            for (int i=0; i<transmit_data.len; i++) {
+                completed_packet[i] = transmit_data[i];
+            }
     }
 
     void serial_IOWIRE_startup() {

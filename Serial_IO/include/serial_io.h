@@ -57,7 +57,7 @@ namespace Cloverwatch {
         bool current_buffer = 0;
 
         static void uart_callback(const struct device *dev_ptr, struct uart_event *evt, void* user_data);
-        void transmit(Buffer<packet_size>& bytes);
+        static void transmit(Buffer<packet_size>& bytes);
 
         static void validation_handler(void* args);
 

@@ -60,12 +60,4 @@ void SSFPortAssert(const char *file, unsigned int line)
     exit(1);
 }
 
-#ifndef _WIN32
-SSFPortTick_t SSFPortGetTick64(void)
-{
-    struct timespec ticks;
-    clock_gettime(CLOCK_MONOTONIC, &ticks);
-    return (SSFPortTick_t) ((((SSFPortTick_t)ticks.tv_sec) * 1000) + (ticks.tv_nsec / 1000000));
-}
-#endif /* _WIN32 */
 

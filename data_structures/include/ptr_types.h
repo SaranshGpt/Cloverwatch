@@ -4,7 +4,6 @@
 
 #ifndef PTR_TYPES_H
 #define PTR_TYPES_H
-#include "c_types.h"
 
 namespace Cloverwatch {
 
@@ -32,7 +31,7 @@ namespace Cloverwatch {
     template <PtrIntent intent, typename T>
     class IntentPtr {
     public:
-        T* ptr;
+        T *ptr;
 
         constexpr explicit IntentPtr(T* ptr) : ptr(ptr) {}
 

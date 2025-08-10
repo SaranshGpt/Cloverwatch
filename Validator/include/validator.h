@@ -6,22 +6,32 @@
 #define VALIDATOR_H
 
 #include "reed_soloman.h"
+#include "../../data_structures/include/c_types.h"
 
 namespace Cloverwatch {
 
+	enum class Endianness {
+		LITTLE,
+		BIG
+	};
+
     struct ValidatorConfig {
-        uint8_t header_byte;
+        Byte header_byte;
         uint8_t header_size;
 
-        uint8_t footer_byte;
+        Byte footer_byte;
         uint8_t footer_size;
 
-        uint8_t escape_byte;
+        Byte escape_byte;
 
         uint8_t length_size;
+
+    	Endianness endianness;
     };
 
 	using BlockValidationFunc = bool (*)(WriteVector<Byte> message_rx);
+
+	//TODO: Implement Header CRC for Block Validator.  Right now there is nothing handling erros in header values. Skipping this now as the header is only length as of now
 
     template <uint16_t buffer_size, BlockValidationFunc validation_func>
     class BlockValidator {
@@ -30,7 +40,13 @@ namespace Cloverwatch {
 		void add_bytes(ReadVector<Byte> message_rx, WriteVector<Byte> message_tx);
     	void set_validator_config(ValidatorConfig config);
 
+    	void reset();
+
+    	constexpr explicit BlockValidator(ValidatorConfig config) : config(config) {}
+
 	private:
+
+    	ValidatorConfig config;
 
 		enum class State {
 			HEADER,
@@ -40,8 +56,13 @@ namespace Cloverwatch {
 		} curr_state = State::HEADER;
 
 		int bytes_since_last_state_change = 0;
+    	bool escape_expected = false;
+
+    	uint64_t expected_length = 0;
 
 		Buffer<buffer_size> buffer;
+
+    	void append_length_byte(Byte byte);
 
     };
 
