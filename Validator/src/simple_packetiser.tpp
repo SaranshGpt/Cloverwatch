@@ -2,13 +2,25 @@
 // Created by saransh on 8/6/25.
 //
 
-#include "validator.h"
+#ifndef VALIDATOR_TPP
+#define VALIDATOR_TPP
 
+
+#include "simple_packetiser.h"
+
+#ifndef VALIDATOR_LOG_SKIP
 #include <logger.h>
+#endif
 
-#include "../../data_structures/include/ptr_types.h""
+#include "../../data_structures/include/ptr_types.h"
 
 namespace Cloverwatch {
+
+    static void log_error(const char *msg) {
+#ifndef VALIDATOR_LOG_SKIP
+        Logger<ModuleId::VALIDATION_MODULE>::log(ReadPtr<char>(msg), LogLevel::ERROR);
+#endif
+    };
 
     static inline bool is_special(const Byte &byte, const ValidatorConfig &config) {
         return
@@ -18,12 +30,12 @@ namespace Cloverwatch {
     }
 
     template <uint16_t buffer_size, BlockValidationFunc validation_func>
-    void BlockValidator<buffer_size, validation_func>::set_validator_config(ValidatorConfig config) {
+    void SimplePacketiser_Block<buffer_size, validation_func>::set_validator_config(ValidatorConfig config) {
         this->config = config;
     }
 
     template <uint16_t buffer_size, BlockValidationFunc validation_func>
-    void BlockValidator<buffer_size, validation_func>::reset() {
+    void SimplePacketiser_Block<buffer_size, validation_func>::reset() {
         curr_state = State::HEADER;
         bytes_since_last_state_change = 0;
         escape_expected = false;
@@ -32,7 +44,7 @@ namespace Cloverwatch {
     }
 
     template <uint16_t buffer_size, BlockValidationFunc validation_func>
-    void BlockValidator<buffer_size, validation_func>::append_length_byte(Byte byte) {
+    void SimplePacketiser_Block<buffer_size, validation_func>::append_length_byte(Byte byte) {
 
         switch (config.endianness) {
             case Endianness::LITTLE: {
@@ -48,7 +60,7 @@ namespace Cloverwatch {
     }
 
     template <uint16_t buffer_size, BlockValidationFunc validation_func>
-    void BlockValidator<buffer_size, validation_func>::add_bytes(ReadVector<Byte> message_rx, WriteVector<Byte> message_tx) {
+    void SimplePacketiser_Block<buffer_size, validation_func>::add_bytes(ReadVector<Byte> message_rx, WriteVector<Byte> message_tx) {
 
         auto escape_needed = [this](Byte byte) {
             return (curr_state != State::HEADER && curr_state != State::FOOTER) && (byte == config.header_byte || byte == config.footer_byte || byte == config.escape_byte);
@@ -59,7 +71,7 @@ namespace Cloverwatch {
             bytes_since_last_state_change = 0;
         };
 
-        for(int i = 0; i < message_rx.len; i++) {
+        for(size_t i = 0; i < message_rx.len; i++) {
 
             auto byte = message_rx.ptr.ptr[i];
 
@@ -69,8 +81,8 @@ namespace Cloverwatch {
                 }
                 else {
                     reset();
-                    continue;
                 }
+                continue;
             }
 
             escape_expected = escape_needed(byte);
@@ -94,8 +106,8 @@ namespace Cloverwatch {
                     bytes_since_last_state_change++;
                     if (bytes_since_last_state_change == config.length_size) {
 
-                        if (expected_length > buffer.capacity) {
-                            Logger<ModuleId::VALIDATION_MODULE>::log(ReadPtr<char>("Expected length exceeded buffer capacity. Discarding packet"), LogLevel::WARNING);
+                        if (expected_length > buffer_size) {
+                            log_error("Expected length exceeded buffer capacity. Discarding packet");
                             reset();
                             continue;
                         }
@@ -136,10 +148,11 @@ namespace Cloverwatch {
                             message_tx.len = buffer.len;
                         }
                         else {
-                            Logger<ModuleId::VALIDATION_MODULE>::log(ReadPtr<char>("Validation failed. Discarding packet"), LogLevel::WARNING);
+                            log_error("Validation failed. Discarding packet");
                         }
 
                         reset();
+                        break;
                     }
 
                 }
@@ -151,3 +164,5 @@ namespace Cloverwatch {
     }
 
 }
+
+#endif //VALIDATOR_TPP

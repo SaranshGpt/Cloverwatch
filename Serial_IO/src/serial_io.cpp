@@ -20,7 +20,7 @@ namespace Cloverwatch {
 
         Buffer<buffer_size> buffer;
 
-        auto instance = This_Type::Instance();
+        auto& instance = This_Type::instance;
 
         instance.validation_queue.pop(
             WriteVector<Byte>(
@@ -35,11 +35,16 @@ namespace Cloverwatch {
 
         instance.validation_func(buffer.to_ReadVector(), user_data, packet_buffer.to_WriteVector(), transmit_buffer.to_WriteVector());
 
-        if (transmit_buffer.size > 0)
+        //TODO: check for buffer overflow
+
+        if (transmit_buffer.len > 0)
             transmit(packet_buffer);
 
-        if (packet_buffer.size > 0)
-            instance.process_queue.push(packet_buffer);
+        if (packet_buffer.len > 0) {
+            bool res = instance.process_queue.push(std::move(packet_buffer));
+            (void)res;
+            //TODO: Add error handling
+        }
 
     }
 
@@ -60,13 +65,11 @@ namespace Cloverwatch {
         case UART_RX_RDY: {
             auto& [buf, offset, len] = evt->data.rx;
 
-
             if (! this_ptr->validation_queue.push(ReadVector<Byte>(
-                ReadPtr<Byte>(reinterpret_cast<const Byte*>(buf + offset)), len, len
+                ReadPtr<Byte>(buf + offset), len, len
             ))) {
                 Logger<ModuleId::SERIAL_IO>::log(ReadPtr<char>("Validation queue full"), LogLevel::WARNING);
             }
-            
             break;
         }
         case UART_RX_BUF_REQUEST: {
@@ -92,7 +95,7 @@ namespace Cloverwatch {
 
 
     template <const device* dev, uint16_t buffer_size, uint16_t packet_size, uint8_t num_packet_buffers>
-    void Serial_DMAasync<dev, buffer_size, packet_size, num_packet_buffers>::start_process(process_func validation_func, void* user_data) {
+    void Serial_DMAasync<dev, buffer_size, packet_size, num_packet_buffers>::start_process(process_func validation_func, WriteBufferPtr<void> user_data) {
 
         instance.validation_func = validation_func;
         instance.user_data = user_data;
@@ -125,7 +128,8 @@ namespace Cloverwatch {
     template <const device* dev, uint16_t buffer_size, uint16_t packet_size, uint8_t num_packet_buffers>
     void Serial_DMAasync<dev, buffer_size, packet_size, num_packet_buffers>::transmit(Buffer<packet_size>& bytes) {
 
-        int res = uart_tx(dev, reinterpret_cast<uint8_t*>(bytes.buffer.data()), bytes.size, K_NO_WAIT);
+        int res = uart_tx(dev, bytes.buffer.data(), bytes.len, K_NO_WAIT.ticks);
+        (void)res;
         //TODO: Add Error handling
     }
 

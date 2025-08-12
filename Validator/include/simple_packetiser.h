@@ -34,7 +34,7 @@ namespace Cloverwatch {
 	//TODO: Implement Header CRC for Block Validator.  Right now there is nothing handling erros in header values. Skipping this now as the header is only length as of now
 
     template <uint16_t buffer_size, BlockValidationFunc validation_func>
-    class BlockValidator {
+    class SimplePacketiser_Block {
 	public:
 
 		void add_bytes(ReadVector<Byte> message_rx, WriteVector<Byte> message_tx);
@@ -42,7 +42,7 @@ namespace Cloverwatch {
 
     	void reset();
 
-    	constexpr explicit BlockValidator(ValidatorConfig config) : config(config) {}
+    	constexpr explicit SimplePacketiser_Block(ValidatorConfig config) : config(config) {}
 
 	private:
 
@@ -55,7 +55,7 @@ namespace Cloverwatch {
 			FOOTER
 		} curr_state = State::HEADER;
 
-		int bytes_since_last_state_change = 0;
+		size_t bytes_since_last_state_change = 0;
     	bool escape_expected = false;
 
     	uint64_t expected_length = 0;
@@ -67,5 +67,7 @@ namespace Cloverwatch {
     };
 
 }
+
+#include "../src/simple_packetiser.tpp"
 
 #endif //VALIDATOR_H

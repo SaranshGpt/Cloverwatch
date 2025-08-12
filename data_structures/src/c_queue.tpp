@@ -78,7 +78,7 @@ namespace Cloverwatch {
 
     template<uint16_t capacity>
     bool CByteQueue_SPSC<capacity>::push(Byte byte) {
-        return ring_buf_put(&ring_buffer, reinterpret_cast<uint8_t *>(&byte), 1);
+        return ring_buf_put(&ring_buffer, &byte, 1);
     }
 
     template<uint16_t capacity>
@@ -87,7 +87,7 @@ namespace Cloverwatch {
 
         if (remaining_capacity() < bytes.len) return false;
 
-        ring_buf_put(&ring_buffer, reinterpret_cast<const uint8_t *>(bytes.ptr.ptr), bytes.len);
+        ring_buf_put(&ring_buffer, bytes.data(), bytes.len);
 
         return true;
     }
@@ -97,7 +97,7 @@ namespace Cloverwatch {
 
         Byte byte;
 
-        bool popped = ring_buf_get(&ring_buffer, reinterpret_cast<uint8_t *>(&byte), 1);
+        bool popped = ring_buf_get(&ring_buffer, &byte, 1);
 
         if (!popped) return std::nullopt;
 
@@ -107,7 +107,7 @@ namespace Cloverwatch {
     template<uint16_t capacity>
     inline void CByteQueue_SPSC<capacity>::pop(WriteVector<Byte> buffer) {
 
-        buffer.len = ring_buf_get(&ring_buffer, reinterpret_cast<uint8_t *>(buffer.ptr.ptr), buffer.capacity);
+        buffer.len = ring_buf_get(&ring_buffer, buffer.data(), buffer.capacity);
 
     }
 

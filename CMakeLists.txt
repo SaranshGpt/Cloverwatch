@@ -7,8 +7,9 @@ add_subdirectory(Serial_IO)
 add_subdirectory(TaskManager)
 add_subdirectory(Logger)
 add_subdirectory(Validator)
+add_subdirectory(TesterDevice EXCLUDE_FROM_ALL)
 
 target_sources(app PRIVATE main.cpp)
 target_link_libraries(app PRIVATE
-    Serial_IO TaskManager Logger Validator
+        Serial_IO TaskManager Logger Validator
 )

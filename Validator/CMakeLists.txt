@@ -1,4 +1,12 @@
+cmake_minimum_required(VERSION 3.20)
+
 add_library(Validator)
+
+set(Validator_Includes
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../Libraries/libcorrect/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/libs/ssf_ecc"
+)
 
 target_include_directories(
     Validator
@@ -16,7 +24,6 @@ target_sources(
         PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/src/reed_soloman.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/viterbi.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/validator.cpp"
         ${rs_sources}
 )
 
@@ -25,3 +32,9 @@ target_link_libraries(
         Logger
         zephyr_interface
 )
+
+add_custom_target(copy_validator_source
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/include/crc.h ${CMAKE_CURRENT_SOURCE_DIR}/../TesterDevice/crc.h
+)
+
+add_dependencies(Validator copy_validator_source)
