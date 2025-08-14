@@ -60,7 +60,7 @@ namespace Cloverwatch {
     template <typename T>
     void fill_crc(WriteVector<Byte> buffer) {
 
-        T crc = calculate_crc<T>(ReadVector<Byte>(buffer));
+        T crc = calculate_crc<T>(buffer.to_read_vector());
 
         auto ptr = buffer.ptr.ptr + buffer.len;
         T* cast_ptr = reinterpret_cast<T*>(ptr);

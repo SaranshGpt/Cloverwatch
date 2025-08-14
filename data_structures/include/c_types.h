@@ -23,6 +23,33 @@ namespace Cloverwatch {
         constexpr IntentVector(IntentPtr<intent, T> ptr, size_t capacity, size_t len = 0) : ptr(ptr), len(len), capacity(capacity) {}
         constexpr IntentVector(T* ptr, size_t capacity, size_t len = 0) : ptr(IntentPtr<intent, T>(ptr)), len(len), capacity(capacity) {}
 
+        template <PtrIntent other>
+        constexpr std::enable_if_t<
+            other != PtrIntent::READONLY &&
+            other != PtrIntent::COPY_CONTENTS &&
+            other != PtrIntent::BUFFER_READONLY,
+            IntentVector<other, T>
+        > to_intent() {
+            return IntentVector<other, T>(ptr.ptr, capacity, len);
+        }
+
+        template<PtrIntent other>
+        constexpr std::enable_if_t<
+            other == PtrIntent::READONLY ||
+            other == PtrIntent::COPY_CONTENTS ||
+            other == PtrIntent::BUFFER_READONLY,
+            const IntentVector<other, const T>
+        > to_intent() {
+            return IntentVector<other, const T>((const T*)ptr.ptr, capacity, len);
+        }
+
+        constexpr const IntentVector<PtrIntent::READONLY, const T> to_read_vector() { return to_intent<PtrIntent::READONLY>(); }
+        constexpr IntentVector<PtrIntent::READWRITE, T> to_write_vector() { return to_intent<PtrIntent::READWRITE>(); }
+        constexpr const IntentVector<PtrIntent::BUFFER_READONLY, const T> to_buffer_read_vector() { return to_intent<PtrIntent::BUFFER_READONLY>(); }
+        constexpr IntentVector<PtrIntent::BUFFER_READWRITE, T> to_buffer_write_vector() { return to_intent<PtrIntent::BUFFER_READWRITE>(); }
+        constexpr IntentVector<PtrIntent::MOVE_OWNERSHIP, T> to_move_vector() { return to_intent<PtrIntent::MOVE_OWNERSHIP>(); }
+        constexpr const IntentVector<PtrIntent::COPY_CONTENTS, const T> to_copy_vector() { return to_intent<PtrIntent::COPY_CONTENTS>(); }
+
         void push_back(T val) {
             if (len == capacity) {
                 return;

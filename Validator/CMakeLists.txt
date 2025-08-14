@@ -32,9 +32,3 @@ target_link_libraries(
         Logger
         zephyr_interface
 )
-
-add_custom_target(copy_validator_source
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/include/crc.h ${CMAKE_CURRENT_SOURCE_DIR}/../TesterDevice/crc.h
-)
-
-add_dependencies(Validator copy_validator_source)

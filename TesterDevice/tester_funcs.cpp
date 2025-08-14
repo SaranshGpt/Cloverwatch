@@ -7,8 +7,10 @@
 #include <vector>
 #include <cstddef>
 
-#include "crc.h"
+#include "libs/crc.h"
 #include "ssfrs.h"
+
+#include "../data_structures/include/c_types.h"
 
 extern "C" {
 
