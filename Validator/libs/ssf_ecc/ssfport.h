@@ -219,12 +219,6 @@ __declspec(noreturn)
 #endif
 void SSFPortAssert(const char *file, unsigned int line);
 
-#ifdef _WIN32
-#define SSFPortGetTick64() GetTickCount64()
-#else /* _WIN32 */
-SSFPortTick_t SSFPortGetTick64(void);
-#endif /* _WIN32 */
-
 #include "ssf.h"
 #include "ssfoptions.h"
 

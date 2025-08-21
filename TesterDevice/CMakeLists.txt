@@ -2,29 +2,34 @@ cmake_minimum_required(VERSION 3.20)
 
 project(TesterDeviceLibs)
 
-add_library(TesterLib SHARED)
-
-file(GLOB_RECURSE libsrc
+file(GLOB_RECURSE tester_libsrc
         "${CMAKE_CURRENT_SOURCE_DIR}/libs/*c"
         "${CMAKE_CURRENT_SOURCE_DIR}/libs/*cpp"
 )
 
-include_directories(
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+message("TesterDevice: Fount Python Toolchain")
+find_package(pybind11 REQUIRED)
+message("TesterDevice: Found pybind11")
+
+pybind11_add_module(TesterLib
+        ${tester_libsrc}
+        tester_funcs.cpp
+)
+
+target_compile_features(TesterLib PRIVATE cxx_std_17)
+
+target_include_directories(TesterLib PRIVATE
         libs/ssf_ecc
         libs
 )
 
-target_sources(TesterLib
-        PRIVATE
-        ${libsrc}
-        tester_funcs.cpp
-)
-
 target_compile_definitions(TesterLib PRIVATE VALIDATOR_LOG_SKIP)
 
-install(TARGETS TesterLib
-        LIBRARY DESTINATION ${INSTALL_LIB_DIR} lib
-        RUNTIME DESTINATION ${INSTALL_LIB_DIR} bin
+add_custom_command(TARGET TesterLib POST_BUILD
+        COMMAND PYTHONPATH=./cmake-build-debug/ ${CMAKE_CURRENT_SOURCE_DIR}/.venv/bin/pybind11-stubgen TesterLib --output-dir=${CMAKE_CURRENT_SOURCE_DIR}/device/
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Copying stub file to build directory"
 )
 
-message(STATUS "Found lib source files: ${libsrc}")
+message("TesterDevice: TesterLib initialised successfully")

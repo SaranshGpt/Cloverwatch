@@ -19,10 +19,9 @@ class CLI:
             print(f'Error: Invalid format {args.format}')
             return
 
-    def __init__(self, port: str, lib, config):
+    def __init__(self, port: str, config):
 
         self.port = port
-        self.lib = lib
         self.config = config
 
 
