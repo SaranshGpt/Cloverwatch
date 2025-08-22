@@ -3,8 +3,7 @@ from typing import List
 from packetiser import Packet
 
 def run_logic_test(port: str, data: str, repeat: int, data_format: str, noise: str, length: int, error_prob: float, config: str):
-    pass
-#TODO
+
 
 logic_test_command = {
     "name": "logic_test",

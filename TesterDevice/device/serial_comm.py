@@ -14,11 +14,18 @@ class SerialComm:
         self.timeout = timeout
         self.serial = serial.Serial(port, baudrate, timeout=timeout)
 
-    def add_data(self, data, num_errors: int, error_range: tuple[int, int]):
+    def add_data(self, data : bytes):
+        self.packet = data
 
-        for i in range(num_errors):
-            error_start = error_range[0] + i * (error_range[1] - error_range[0]) // num_errors
-            error_end = error_range[0] + (i + 1) * (error_range[1] - error_range[0]) // num_errors
-            self.packet = data[:error_start] + bytes([data[error_start] ^ 0xFF]) + data[error_end:]
-            self.serial.write(self.packet)
-            time.sleep(0.01)
+    def enable_port(self):
+        self.serial.open()
+
+    def send_data(self):
+        self.serial.write(self.packet.encode())
+
+    def wait_for_data(self, num_bytes: int, timeout: int = 5):
+        self.serial.read(num_bytes)
+
+    def send_recieve(self)-> bytes:
+        self.serial.write(self.packet)
+        return self.serial.read(len(self.packet))
