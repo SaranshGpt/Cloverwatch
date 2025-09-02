@@ -17,11 +17,11 @@ namespace Cloverwatch {
     struct IntentVector {
 
         IntentPtr<intent, T> ptr;
-        size_t len;
-        size_t capacity;
+        size_t &len;
+        const size_t capacity;
 
-        constexpr IntentVector(IntentPtr<intent, T> ptr, size_t capacity, size_t len = 0) : ptr(ptr), len(len), capacity(capacity) {}
-        constexpr IntentVector(T* ptr, size_t capacity, size_t len = 0) : ptr(IntentPtr<intent, T>(ptr)), len(len), capacity(capacity) {}
+        constexpr IntentVector(IntentPtr<intent, T> ptr, size_t capacity, size_t &len) : ptr(ptr), len(len), capacity(capacity) {}
+        constexpr IntentVector(T* ptr, size_t capacity, size_t &len) : ptr(IntentPtr<intent, T>(ptr)), len(len), capacity(capacity) {}
 
         template <PtrIntent other>
         constexpr std::enable_if_t<
@@ -51,10 +51,10 @@ namespace Cloverwatch {
         constexpr const IntentVector<PtrIntent::COPY_CONTENTS, const T> to_copy_vector() { return to_intent<PtrIntent::COPY_CONTENTS>(); }
 
         void push_back(T val) {
-            if (len == capacity) {
+            if (len >= capacity) {
                 return;
             }
-            ptr[len++] = val;
+            ptr.ptr[len++] = val;
         }
 
         void pop_back() {
@@ -109,10 +109,10 @@ namespace Cloverwatch {
         return IntentVector<intent, char>(string, size);
     }
 
-    template <uint16_t buffer_size>
+    template <size_t buffer_size>
     struct Buffer {
         std::array<Byte, buffer_size> buffer;
-        uint16_t len = 0;
+        size_t len = 0;
 
         Byte& operator[](int index) { return buffer[index]; }
         const Byte& operator[](int index) const { return buffer[index]; }

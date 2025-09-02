@@ -1,8 +1,10 @@
 import sys
 import os
-from typing import List
+import typing
+from typing import List, Collection
 from unittest import case
 import random
+from collections.abc import Sequence
 
 module_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'cmake-build-debug'))
 
@@ -41,19 +43,20 @@ class Packet:
                 if len(ecc_args) != 2:
                     raise Exception("Invalid number of arguments for Reed-Solomon ECC")
 
-                mod_payload = bytearray(self.packet)
-                TesterLib.apply_reed_solomon(mod_payload, int(ecc_args[0]), int(ecc_args[1]))
+
+                mod_payload = list(self.packet)
+                mod_payload = TesterLib.apply_reed_solomon(mod_payload, int(ecc_args[0]), int(ecc_args[1]))
                 return bytes(mod_payload)
             case _:
                 raise Exception("Invalid ECC name")
-    def create_packet_data(self, validator_conf: TesterLib.ValidatorConfig, ecc_type: str, ecc_name: str, ecc_args: List[str], error_prob: float):
+
+    def create_packet_data(self, validator_conf: TesterLib.ValidatorConfig, ecc_type: str, ecc_name: str, ecc_args: List[str]):
 
         match ecc_type:
             case "block":
-                self.packet = TesterLib.create_packet_simple(
-                    self._apply_block_ecc(ecc_name, ecc_args),
-                    int(ecc_args[0]),
-                    validator_conf)
+                self.packet = bytes(TesterLib.create_packet_simple(
+                    list(self._apply_block_ecc(ecc_name, ecc_args)),
+                    validator_conf))
             case _:
                 raise Exception("Invalid ECC type")
 

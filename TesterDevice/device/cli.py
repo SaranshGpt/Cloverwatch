@@ -1,14 +1,13 @@
 from typing import List
 
 import argparse
+import readline
 import shlex
 
 class CLI:
 
-    def __init__(self, port: str, config, commands: List[dict]):
+    def __init__(self, commands: List[dict]):
 
-        self.port = port
-        self.config = config
 
         self.parser = argparse.ArgumentParser(description='TesterDevice CLI')
         self.commands = self.parser.add_subparsers(title = 'Commands', help='Available commands')
@@ -17,7 +16,7 @@ class CLI:
             cmd_parser = self.commands.add_parser(cmd["name"], help=cmd["help"])
 
             for arg in cmd["args"]:
-                cmd_parser.add_argument(*arg["flags"], help=arg["help"], type=arg["type"], default=arg["default"])
+                cmd_parser.add_argument(*arg["flags"], help=arg["help"], type=arg["type"], default=arg.get("default"))
 
             cmd_parser.set_defaults(func=cmd["func"])
 
@@ -25,7 +24,7 @@ class CLI:
         
         while True:
 
-            inp = input(self.config['starting_string'])
+            inp = input("Cloverwatch> ")
 
             if not inp:
                 continue
@@ -36,11 +35,16 @@ class CLI:
                 self.parser.print_help()
                 continue
 
+            if args[0] == 'exit':
+                break
+
             try:
                 parsed_args = self.parser.parse_args(args)
             except Exception as e:
                 print(f'Error parsing Arguments: {e}')
                 self.parser.print_help()
+                continue
+            except SystemExit:
                 continue
 
             try:

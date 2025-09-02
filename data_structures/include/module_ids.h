@@ -17,6 +17,7 @@ namespace Cloverwatch {
         PATTERN_MATCHER = 4,
         CLI = 5,
         MAIN_THREAD = 6,
+        CRC = 7,
         MAX
     };
 

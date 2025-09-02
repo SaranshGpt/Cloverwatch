@@ -71,9 +71,9 @@ namespace Cloverwatch {
             bytes_since_last_state_change = 0;
         };
 
-        for(size_t i = 0; i < message_rx.len; i++) {
+        for(size_t curr_ind = 0; curr_ind < message_rx.len; curr_ind++) {
 
-            auto byte = message_rx.ptr.ptr[i];
+            auto byte = message_rx.ptr.ptr[curr_ind];
 
             if (escape_expected) {
                 if (byte == config.escape_byte) {
@@ -142,7 +142,7 @@ namespace Cloverwatch {
                             valid = true;
 
                         if (valid) {
-                            for (int i=0; i<buffer.len; i++) {
+                            for (size_t i=0; i<buffer.len; i++) {
                                 message_tx[i] = buffer[i];
                             }
                             message_tx.len = buffer.len;

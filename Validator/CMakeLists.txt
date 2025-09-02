@@ -12,7 +12,7 @@ target_include_directories(
     Validator
         PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
-        "${CMAKE_CURRENT_SOURCE_DIR}/../Libraries/libcorrect/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../"
 
         "${CMAKE_CURRENT_SOURCE_DIR}/libs/ssf_ecc"
 )

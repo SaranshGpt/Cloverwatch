@@ -28,10 +28,21 @@ The Goal of the project is to create firmware for a device that can be placed on
   - Key data structures
   - Pointer ownership model
 - Implemented High-throughput and Low-latency data pipeline between the UART handler and validation/processing modules
+- Integrated Reed-Soloman implementation into pipeline
+- Implemented a packetiser format
 
 ## Currently working on
-- Integration of Reed-Solomon algorithm into the pipeline
-- Packet parsing
+- Testing infrastructure: A Python-based CLI tool to test error correction logic and performance
+  - Completed
+    - Configuration:
+      - Cmake config to copy appropriate source files into the TesterDevice directory. This was to make the tester project more easily extractable into its own project
+      - Pybind11 + clang/Binder config to integrate code with common C/C++ libraries
+    - ClI skeleton
+    - Python-end of packetiser and reed-soloman
+  - In progress
+    - Testing Functions
+    - Serial logic
+    - General refactoring (The overall structure is still flexible)
 
 ## Next Steps
 1. Support for Viterbi error correction

@@ -23,9 +23,7 @@ namespace Cloverwatch {
             bool decode_res = SSFRSDecode(message_rx.data(), message_rx.len, &rx_len, max_symbols, chunk_size);
             message_rx.len = rx_len;
 
-            return decode_res && validate_crc<uint32_t>(
-                ReadVector<Byte>(message_rx.data(), message_rx.capacity, rx_len)
-            );
+            return decode_res && validate_crc(message_rx.to_read_vector(), 4);
         }
 
         template <uint8_t chunk_size, uint8_t max_symbols>

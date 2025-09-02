@@ -25,7 +25,8 @@ namespace Cloverwatch {
         instance.validation_queue.pop(
             WriteVector<Byte>(
                 buffer.buffer.data(),
-                buffer_size
+                buffer_size,
+                buffer.len
             ));
 
         auto user_data = This_Type::Instance().user_data;
@@ -42,56 +43,59 @@ namespace Cloverwatch {
 
         if (packet_buffer.len > 0) {
             bool res = instance.process_queue.push(std::move(packet_buffer));
-            (void)res;
-            //TODO: Add error handling
+            if (!res) {
+                Logger<ModuleId::SERIAL_IO>::log(ReadPtr<char>("Process queue full"), LogLevel::WARNING);
+            }
         }
 
     }
 
     template<const device *dev, uint16_t buffer_size, uint16_t packet_size, uint8_t num_packet_buffers>
-    void Serial_DMAasync<dev, buffer_size, packet_size, num_packet_buffers>::uart_callback(const struct device *dev_ptr, struct uart_event *evt, void* user_data) {
+    void Serial_DMAasync<dev, buffer_size, packet_size, num_packet_buffers>::uart_callback(const device *dev_ptr, uart_event *evt, void* user_data) {
 
-    auto* this_ptr = static_cast<This_Type*>(user_data);
+        (void)dev_ptr;
 
-    switch (evt->type) {
-        case UART_TX_DONE: {
-            Logger<ModuleId::SERIAL_IO>::log(ReadPtr<char>("TX Done"), LogLevel::DEBUG);
-            break;
-        }
-        case UART_TX_ABORTED: {
-            Logger<ModuleId::SERIAL_IO>::log(ReadPtr<char>("TX Aborted"), LogLevel::DEBUG);
-            break;
-        }
-        case UART_RX_RDY: {
-            auto& [buf, offset, len] = evt->data.rx;
+        auto* this_ptr = static_cast<This_Type*>(user_data);
 
-            if (! this_ptr->validation_queue.push(ReadVector<Byte>(
-                ReadPtr<Byte>(buf + offset), len, len
-            ))) {
-                Logger<ModuleId::SERIAL_IO>::log(ReadPtr<char>("Validation queue full"), LogLevel::WARNING);
+        switch (evt->type) {
+            case UART_TX_DONE: {
+                Logger<ModuleId::SERIAL_IO>::log(ReadPtr<char>("TX Done"), LogLevel::DEBUG);
+                break;
             }
-            break;
-        }
-        case UART_RX_BUF_REQUEST: {
-            uint8_t* buffer = this_ptr->buffer_pair[this_ptr->current_buffer].data();
-            this_ptr->current_buffer = !this_ptr->current_buffer;
-            uart_rx_buf_rsp(dev, buffer, buffer_size);
-            break;
-        }
-        case UART_RX_BUF_RELEASED: {
-            Logger<ModuleId::SERIAL_IO>::log(ReadPtr<char>("RX Buffer Released"), LogLevel::DEBUG);
-            break;
-        }
-        case UART_RX_DISABLED: {
-            Logger<ModuleId::SERIAL_IO>::log(ReadPtr<char>("RX Disabled"), LogLevel::DEBUG);
-            break;
-        }
-        case UART_RX_STOPPED: {
-            Logger<ModuleId::SERIAL_IO>::log(ReadPtr<char>("RX Stopped"), LogLevel::DEBUG);
-            break;
+            case UART_TX_ABORTED: {
+                Logger<ModuleId::SERIAL_IO>::log(ReadPtr<char>("TX Aborted"), LogLevel::DEBUG);
+                break;
+            }
+            case UART_RX_RDY: {
+                auto& [buf, offset, len] = evt->data.rx;
+
+                if (! this_ptr->validation_queue.push(ReadVector<Byte>(
+                    ReadPtr<Byte>(buf + offset), len, len
+                ))) {
+                    Logger<ModuleId::SERIAL_IO>::log(ReadPtr<char>("Validation queue full"), LogLevel::WARNING);
+                }
+                break;
+            }
+            case UART_RX_BUF_REQUEST: {
+                uint8_t* buffer = this_ptr->buffer_pair[this_ptr->current_buffer].data();
+                this_ptr->current_buffer = !this_ptr->current_buffer;
+                uart_rx_buf_rsp(dev, buffer, buffer_size);
+                break;
+            }
+            case UART_RX_BUF_RELEASED: {
+                Logger<ModuleId::SERIAL_IO>::log(ReadPtr<char>("RX Buffer Released"), LogLevel::DEBUG);
+                break;
+            }
+            case UART_RX_DISABLED: {
+                Logger<ModuleId::SERIAL_IO>::log(ReadPtr<char>("RX Disabled"), LogLevel::DEBUG);
+                break;
+            }
+            case UART_RX_STOPPED: {
+                Logger<ModuleId::SERIAL_IO>::log(ReadPtr<char>("RX Stopped"), LogLevel::DEBUG);
+                break;
+                }
         }
     }
-}
 
 
     template <const device* dev, uint16_t buffer_size, uint16_t packet_size, uint8_t num_packet_buffers>
@@ -117,7 +121,7 @@ namespace Cloverwatch {
 
     template <const device* dev, uint16_t buffer_size, uint16_t packet_size, uint8_t num_packet_buffers>
     void Serial_DMAasync<dev, buffer_size, packet_size, num_packet_buffers>::stop_process() {
-        //Will be implemented later. Not a priority right now
+        //TODO: Will be implemented later. Not a priority right now
     }
 
     template <const device* dev, uint16_t buffer_size, uint16_t packet_size, uint8_t num_packet_buffers>
@@ -129,8 +133,13 @@ namespace Cloverwatch {
     void Serial_DMAasync<dev, buffer_size, packet_size, num_packet_buffers>::transmit(Buffer<packet_size>& bytes) {
 
         int res = uart_tx(dev, bytes.buffer.data(), bytes.len, K_NO_WAIT.ticks);
-        (void)res;
-        //TODO: Add Error handling
+
+        if (res == 0) {
+            Logger<ModuleId::SERIAL_IO>::log(ReadPtr<char>("TX Success"), LogLevel::DEBUG);
+        }
+        else {
+            Logger<ModuleId::SERIAL_IO>::log(ReadPtr<char>("TX Failed"), LogLevel::DEBUG);
+        }
     }
 
 }

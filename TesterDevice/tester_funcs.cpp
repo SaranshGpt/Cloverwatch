@@ -8,13 +8,14 @@
 #include <cstddef>
 
 #include "libs/crc.h"
-#include "ssfrs.h"
+#include "libs/ssf_ecc/ssfrs.h"
 
 #include "../data_structures/include/c_types.h"
 
 #include "tester_funcs.hpp"
 
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 std::vector<Byte> create_packet_simple(std::vector<Byte> payload, ValidatorConfig config) {
     std::vector<Byte> wrapped_payload;
@@ -46,30 +47,48 @@ std::vector<Byte> create_packet_simple(std::vector<Byte> payload, ValidatorConfi
     return wrapped_payload;
 }
 
-void apply_reed_solomon(std::vector<Byte> &payload, const uint8_t chunk_size, const uint8_t num_symbols) {
-    const auto num_chunks = (payload.size() + 4) / chunk_size + ((payload.size() + 4) % chunk_size > 0);
+std::vector<Byte> apply_reed_solomon(std::vector<Byte> &payload, const uint8_t chunk_size, const uint8_t num_symbols) {
 
-    const auto core_size = num_chunks * chunk_size;
-    const auto total_size = core_size + num_symbols * num_chunks;
+    size_t crc_size = 4;
+    size_t payload_size = payload.size() + crc_size;
 
-    payload.reserve(total_size);
+    const auto num_chunks = payload_size / chunk_size + ((payload_size % chunk_size) > 0);
 
-    while (payload.size() < core_size)
-        payload.push_back(0);
+    size_t core_size = num_chunks * chunk_size;
+    size_t data_size = core_size - crc_size;
+    size_t total_size = core_size + num_symbols * num_chunks;
 
-    payload.resize(total_size);
+    payload.resize(total_size, 0);
 
-    auto write_vec = Cloverwatch::WriteVector<Byte>(&payload[0], core_size, core_size - 4);
+    for (size_t i = data_size; i < core_size; i++) payload[i] = 0;
 
-    Cloverwatch::fill_crc<uint32_t>(write_vec);
+    for (size_t i=0; i<data_size; i++) {
+        payload[i%crc_size + data_size] ^= payload[i];
+    }
 
     const uint8_t *payload_ptr = payload.data();
     uint8_t *ecc_ptr = &payload[core_size];
 
     uint16_t buf_len = 0;
 
-    SSFRSEncode(payload_ptr, num_chunks * chunk_size, ecc_ptr, payload.size() - num_chunks * chunk_size, &buf_len,
+    SSFRSEncode(payload_ptr, core_size, ecc_ptr, payload.size() - core_size, &buf_len,
                 num_symbols, chunk_size);
+
+    return payload;
+}
+
+std::vector<Byte> extract_decoded_payload(std::vector<Byte> &packet, const ValidatorConfig config, const uint8_t chunk_size, const uint8_t num_symbols) {
+
+    const auto payload_start = &(packet[config.header_size + config.length_size]);
+    const auto length = packet.size() - config.header_size - config.length_size - config.footer_size;
+
+    uint16_t new_length = 0;
+
+    const auto success = SSFRSDecode(payload_start, length, &new_length, num_symbols, chunk_size);
+
+    return success?
+        std::vector<Byte>(payload_start, payload_start + new_length) :
+        std::vector<Byte>();
 }
 
 PYBIND11_MODULE(TesterLib, m) {
@@ -77,6 +96,7 @@ PYBIND11_MODULE(TesterLib, m) {
 
     m.def("create_packet_simple", &create_packet_simple, "Create a packet with a simple header and footer");
     m.def("apply_reed_solomon", &apply_reed_solomon, "Apply Reed-Solomon to a payload");
+    m.def("extract_decoded_payload", &extract_decoded_payload, "Extract the decoded payload from a packet");
 
     pybind11::enum_<Endianness>(m, "Endianness")
             .value("LITTLE", Endianness::LITTLE)

@@ -9,6 +9,7 @@
 
 #ifndef VALIDATOR_LOG_SKIP
 #include <zephyr/sys/util.h>
+#include "Logger/include/logger.h"
 #else
 #define bytecpy(dst, src, len) memcpy(dst, src, len)
 #endif
@@ -16,58 +17,50 @@
 #include "../../data_structures/include/ptr_types.h"
 #include "../../data_structures/include/c_types.h"
 
-
 namespace Cloverwatch {
 
-    template <typename T>
-    T calculate_crc(ReadVector<Byte> buffer) {
+    constexpr int max_crc_size = 8;
 
-        T val = 0;
+    static void calculate_crc(ReadVector<Byte> buffer, WriteVector<Byte> crc) {
 
-        for (size_t i = 0; i < buffer.len; i+=sizeof(T)) {
-            auto ptr = buffer.ptr.ptr + i;
+        const size_t num_bytes = crc.len;
 
-            const T* cast_ptr = reinterpret_cast<const T*>(ptr);
-            val ^= *cast_ptr;
-        }
-
-        auto div = buffer.len / sizeof(T);
-
-        if (div != 0) {
-            T curr_val = 0;
-            for (uint32_t i = 0; i < div; i++) {
-                curr_val = (curr_val << 8) | buffer.ptr.ptr[buffer.len - 1 - i];
-            }
-            val ^= curr_val;
-        }
-
-        return val;
+        for (size_t i = 0; i < buffer.len; i++)
+            crc[i%num_bytes] ^= buffer[i];
     }
 
-    template <typename T>
-    bool validate_crc(ReadVector<Byte> buffer) {
+    bool validate_crc(ReadVector<Byte> buffer, size_t num_bytes) {
 
-        auto ptr = buffer.ptr.ptr + buffer.len - sizeof(T);
+        Byte crc_fill[max_crc_size];
+        size_t len = num_bytes;
 
-        T crc_val;
-        bytecpy(&crc_val, ptr, sizeof(T));
+        for (size_t i = 0; i < len; i++) crc_fill[i] = buffer[buffer.len - num_bytes + i];
 
-        return crc_val == calculate_crc<T>(
-            ReadVector<Byte>(buffer.ptr.ptr, buffer.capacity, buffer.len - sizeof(T))
+        size_t temp_len = buffer.len - num_bytes;
+
+        calculate_crc(
+            ReadVector<Byte>(buffer.ptr, buffer.capacity, temp_len),
+            WriteVector<Byte>(crc_fill, max_crc_size, len)
+            );
+
+        for (size_t i = 0; i < len; i++)
+            if (crc_fill[i]) return false;
+
+        return true;
+    }
+
+    void fill_crc(WriteVector<Byte> buffer, size_t num_bytes) {
+
+        size_t temp_len = buffer.len - num_bytes;
+
+        for (size_t i=0; i < num_bytes; i++)
+            buffer[buffer.len - num_bytes + i] = 0;
+
+        calculate_crc(
+            ReadVector<Byte>(buffer.ptr.ptr, buffer.capacity, temp_len),
+            WriteVector<Byte>(buffer.ptr.ptr + temp_len, buffer.capacity - temp_len, num_bytes)
         );
-    }
 
-    template <typename T>
-    void fill_crc(WriteVector<Byte> buffer) {
-
-        T crc = calculate_crc<T>(buffer.to_read_vector());
-
-        auto ptr = buffer.ptr.ptr + buffer.len;
-        T* cast_ptr = reinterpret_cast<T*>(ptr);
-        *cast_ptr = crc;
-        bytecpy(buffer.ptr.ptr + buffer.len, &crc, sizeof(T));
-
-        buffer.len += sizeof(T);
     }
 
 }

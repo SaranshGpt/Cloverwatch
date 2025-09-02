@@ -4,11 +4,8 @@
 #include <array>
 #include <atomic>
 #include <optional>
-#include <vector>
 
 #include "c_types.h"
-#include "ptr_types.h"
-#include "c_mutex.h"
 
 #include <zephyr/kernel.h>
 
@@ -21,11 +18,11 @@ namespace Cloverwatch {
         std::optional<T> pop();
         bool push(T&& val);
 
-        inline uint16_t remaining_capacity() const;
-        inline uint16_t size() const;
+        uint16_t remaining_capacity() const;
+        uint16_t size() const;
 
-        inline bool empty() const;
-        inline bool full() const;
+        bool empty() const;
+        bool full() const;
 
     private:
 
@@ -73,7 +70,9 @@ namespace Cloverwatch {
         void init();
 
         bool push(T&& val);
-        void pop(WriteVector<T> buffer);
+        void pop(WriteVector<T> &buffer);
+
+        CQueue_concurrent_MPMC() = default;
 
     private:
 

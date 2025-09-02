@@ -50,6 +50,7 @@ namespace Cloverwatch {
                     break;
                 case LogLevel::ERROR:
                     LOG_ERR("%s%s%s", ModuleId_to_string<module>(), ": ", message.ptr);
+                    break;
                 default:
                     log(ReadPtr<char>("Invalid log level"), LogLevel::WARNING);
             }

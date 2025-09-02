@@ -13,12 +13,10 @@ target_link_libraries(app PRIVATE
         Serial_IO TaskManager Logger Validator
 )
 
-add_custom_command(
-        TARGET app
-        POST_BUILD
-
+execute_process(
         COMMAND ${CMAKE_COMMAND} -E remove_directory
         "${CMAKE_CURRENT_SOURCE_DIR}/TesterDevice/libs/ssf_ecc"
+
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${CMAKE_CURRENT_SOURCE_DIR}/Validator/libs/ssf_ecc"
         "${CMAKE_CURRENT_SOURCE_DIR}/TesterDevice/libs/ssf_ecc"
@@ -26,14 +24,14 @@ add_custom_command(
         COMMAND ${CMAKE_COMMAND} -E remove
         "${CMAKE_CURRENT_SOURCE_DIR}/TesterDevice/libs/crc.h"
         COMMAND ${CMAKE_COMMAND} -E copy
-            "${CMAKE_CURRENT_SOURCE_DIR}/Validator/include/crc.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/TesterDevice/libs/crc.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Validator/include/crc.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/TesterDevice/libs/crc.h"
 )
 
 include(ExternalProject)
 ExternalProject_Add(TesterDevice
         SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/TesterDevice"
-        BINARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/TesterDevice/build"
+        BINARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/TesterDevice/cmake-build-debug"
         CMAKE_ARGS
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
         -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}

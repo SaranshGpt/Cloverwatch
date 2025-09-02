@@ -9,10 +9,9 @@
   length_size: 2
 
   baud_rate: 115200
+  timeout: 5
 
   max_payload_size: 1024
 
-  chunk_size: 255
-  symbols: 1
-
-  starting_string: "Cloverwatch"
+  chunk_size: 127
+  symbols: 4

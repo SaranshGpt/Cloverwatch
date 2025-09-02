@@ -14,7 +14,7 @@ namespace Cloverwatch {
 
     using Serial_IO_Wire = Serial_DMAasync<DEVICE_DT_GET(DT_NODELABEL(uart1)), 1024, 1024, 4>;
 
-    using MainValidator = SimplePacketiser_Block<2048, RS_Validator::decode<255, 4>>;
+    using MainValidator = SimplePacketiser_Block<2048, RS_Validator::decode<127, 4>>;
 
     void validation_func(ReadVector<Byte> bytes, WriteBufferPtr<void> user_data, WriteVector<Byte> transmit_data, WriteVector<Byte> completed_packet) {
 
@@ -22,10 +22,14 @@ namespace Cloverwatch {
 
         validator->add_bytes(bytes, transmit_data);
 
-        if (transmit_data.len > 0)
+        if (transmit_data.len > 0) {
+
+            RS_Validator::encode<127, 4>(transmit_data);
+
             for (size_t i=0; i<transmit_data.len; i++) {
                 completed_packet[i] = transmit_data[i];
             }
+        }
     }
 
     MainValidator validator({
@@ -58,7 +62,7 @@ namespace Cloverwatch {
 
         Logger<ModuleId::MAIN_THREAD>::log(ReadPtr<char>("Starting"), LogLevel::INFO);
 
-        while (1) {
+        while (true) {
             k_sleep(K_MSEC(1000));
         }
     }

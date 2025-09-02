@@ -20,6 +20,9 @@ class SerialComm:
     def enable_port(self):
         self.serial.open()
 
+    def disable_port(self):
+        self.serial.close()
+
     def send_data(self):
         self.serial.write(self.packet.encode())
 
