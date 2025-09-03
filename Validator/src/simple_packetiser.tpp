@@ -29,13 +29,13 @@ namespace Cloverwatch {
             (byte == config.footer_byte);
     }
 
-    template <uint16_t buffer_size, BlockValidationFunc validation_func>
-    void SimplePacketiser_Block<buffer_size, validation_func>::set_validator_config(ValidatorConfig config) {
+    template <uint16_t buffer_size,  BlockEccFunc encode_func, BlockEccFunc decode_func>
+    void SimplePacketiser_Block<buffer_size, encode_func, decode_func>::set_validator_config(ValidatorConfig config) {
         this->config = config;
     }
 
-    template <uint16_t buffer_size, BlockValidationFunc validation_func>
-    void SimplePacketiser_Block<buffer_size, validation_func>::reset() {
+    template <uint16_t buffer_size,  BlockEccFunc encode_func, BlockEccFunc decode_func>
+    void SimplePacketiser_Block<buffer_size, encode_func, decode_func>::reset() {
         curr_state = State::HEADER;
         bytes_since_last_state_change = 0;
         escape_expected = false;
@@ -43,8 +43,8 @@ namespace Cloverwatch {
         buffer.clear();
     }
 
-    template <uint16_t buffer_size, BlockValidationFunc validation_func>
-    void SimplePacketiser_Block<buffer_size, validation_func>::append_length_byte(Byte byte) {
+    template <uint16_t buffer_size,  BlockEccFunc encode_func, BlockEccFunc decode_func>
+    void SimplePacketiser_Block<buffer_size, encode_func, decode_func>::append_length_byte(Byte byte) {
 
         switch (config.endianness) {
             case Endianness::LITTLE: {
@@ -59,8 +59,8 @@ namespace Cloverwatch {
 
     }
 
-    template <uint16_t buffer_size, BlockValidationFunc validation_func>
-    void SimplePacketiser_Block<buffer_size, validation_func>::add_bytes(ReadVector<Byte> message_rx, WriteVector<Byte> message_tx) {
+    template <uint16_t buffer_size,  BlockEccFunc encode_func, BlockEccFunc decode_func>
+    void SimplePacketiser_Block<buffer_size, encode_func, decode_func>::add_bytes(ReadVector<Byte> message_rx, WriteVector<Byte> message_tx) {
 
         auto escape_needed = [this](Byte byte) {
             return (curr_state != State::HEADER && curr_state != State::FOOTER) && (byte == config.header_byte || byte == config.footer_byte || byte == config.escape_byte);
@@ -136,8 +136,8 @@ namespace Cloverwatch {
 
                         bool valid;
 
-                        if constexpr (validation_func != nullptr)
-                            valid = validation_func(buffer.to_WriteVector());
+                        if constexpr (decode_func != nullptr)
+                            valid = decode_func(buffer.to_WriteVector());
                         else
                             valid = true;
 
@@ -160,6 +160,41 @@ namespace Cloverwatch {
             };
 
         }
+
+    }
+
+    template <uint16_t buffer_size,  BlockEccFunc encode_func, BlockEccFunc decode_func>
+    void SimplePacketiser_Block<buffer_size, encode_func, decode_func>::construct_packet(ReadVector<Byte> payload, WriteVector<Byte> packet) const {
+
+        for (size_t i=0; i<config.header_size; i++)
+            packet.push_back(config.header_byte);
+
+        size_t payload_len = payload.len;
+
+        switch (config.endianness) {
+            case Endianness::BIG: {
+                for (size_t i=0; i<config.length_size; i++)
+                    packet.push_back(static_cast<Byte>(payload_len >> (8 * (config.length_size - i - 1))));
+                break;
+            }
+            case Endianness::LITTLE: {
+                for (size_t i=0; i<config.length_size; i++)
+                    packet.push_back(static_cast<Byte>(payload_len >> (8 * i)));
+                break;
+            }
+        }
+
+        for (size_t i=0; i<payload.len; i++)
+            packet.push_back(payload[i]);
+
+        size_t temp_len = payload.len;
+
+        encode_func(WriteVector<Byte>(packet.ptr.ptr + packet.len, packet.capacity - packet.len, temp_len));
+
+        packet.len = temp_len + config.header_size + config.length_size;
+
+        for (size_t i=0; i<config.footer_size; i++)
+            packet.push_back(config.footer_byte);
 
     }
 

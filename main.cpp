@@ -14,23 +14,7 @@ namespace Cloverwatch {
 
     using Serial_IO_Wire = Serial_DMAasync<DEVICE_DT_GET(DT_NODELABEL(uart1)), 1024, 1024, 4>;
 
-    using MainValidator = SimplePacketiser_Block<2048, RS_Validator::decode<127, 4>>;
-
-    void validation_func(ReadVector<Byte> bytes, WriteBufferPtr<void> user_data, WriteVector<Byte> transmit_data, WriteVector<Byte> completed_packet) {
-
-        auto validator = static_cast<MainValidator*>(user_data.ptr);
-
-        validator->add_bytes(bytes, transmit_data);
-
-        if (transmit_data.len > 0) {
-
-            RS_Validator::encode<127, 4>(transmit_data);
-
-            for (size_t i=0; i<transmit_data.len; i++) {
-                completed_packet[i] = transmit_data[i];
-            }
-        }
-    }
+    using MainValidator = SimplePacketiser_Block<2048, RS_Validator::encode<127, 4>, RS_Validator::decode<127, 4>>;
 
     MainValidator validator({
         .header_byte = 0xff,
@@ -42,6 +26,19 @@ namespace Cloverwatch {
         .escape_byte = 0x22,
         .length_size = 2
     });
+
+    void validation_func(ReadVector<Byte> bytes, WriteBufferPtr<void> user_data, WriteVector<Byte> transmit_data, WriteVector<Byte> completed_packet) {
+
+        auto validator = static_cast<MainValidator*>(user_data.ptr);
+
+        validator->add_bytes(bytes, completed_packet);
+
+        if (completed_packet.len > 0) {
+            Logger<ModuleId::MAIN_THREAD>::log(ReadPtr<char>("Packet received"), LogLevel::INFO);
+            transmit_data.clear();
+            validator->construct_packet(completed_packet.to_read_vector(), transmit_data);
+        }
+    }
 
     void serial_IOWIRE_startup() {
         Serial_IO_Wire::Instance().start_process(validation_func, WriteBufferPtr<void>((void*)&validator));

@@ -29,11 +29,11 @@ namespace Cloverwatch {
     	Endianness endianness;
     };
 
-	using BlockValidationFunc = bool (*)(WriteVector<Byte> message_rx);
+	using BlockEccFunc = bool (*)(WriteVector<Byte> message_rx);
 
 	//TODO: Implement Header CRC for Block Validator.  Right now there is nothing handling erros in header values. Skipping this now as the header is only length as of now
 
-    template <uint16_t buffer_size, BlockValidationFunc validation_func>
+    template <uint16_t buffer_size, BlockEccFunc encode_func, BlockEccFunc decode_func>
     class SimplePacketiser_Block {
 	public:
 
@@ -41,6 +41,8 @@ namespace Cloverwatch {
     	void set_validator_config(ValidatorConfig config);
 
     	void reset();
+
+    	void construct_packet(ReadVector<Byte> payload, WriteVector<Byte> packet) const;
 
     	constexpr explicit SimplePacketiser_Block(ValidatorConfig config) : config(config) {}
 
