@@ -27,14 +27,13 @@ namespace Cloverwatch {
         .length_size = 2
     });
 
-    void validation_func(ReadVector<Byte> bytes, WriteBufferPtr<void> user_data, WriteVector<Byte> transmit_data, WriteVector<Byte> completed_packet) {
+    void validation_func(const Byte byte, WriteBufferPtr<void> user_data, WriteVector<Byte> transmit_data, WriteVector<Byte> completed_packet) {
 
         auto validator = static_cast<MainValidator*>(user_data.ptr);
 
-        validator->add_bytes(bytes, completed_packet);
+        validator->add_byte(byte, completed_packet);
 
         if (completed_packet.len > 0) {
-            Logger<ModuleId::MAIN_THREAD>::log(ReadPtr<char>("Packet received"), LogLevel::INFO);
             transmit_data.clear();
             validator->construct_packet(completed_packet.to_read_vector(), transmit_data);
         }

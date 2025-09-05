@@ -23,31 +23,34 @@ namespace Cloverwatch {
         auto& instance = This_Type::instance;
 
         instance.validation_queue.pop(
-            WriteVector<Byte>(
-                buffer.buffer.data(),
-                buffer_size,
-                buffer.len
-            ));
+            buffer.to_WriteVector());
 
         auto user_data = This_Type::Instance().user_data;
 
         Buffer<packet_size> packet_buffer;
         Buffer<packet_size> transmit_buffer;
 
-        instance.validation_func(buffer.to_ReadVector(), user_data, packet_buffer.to_WriteVector(), transmit_buffer.to_WriteVector());
+        static int counter = 0;
 
-        //TODO: check for buffer overflow
+        for (size_t i=0; i<buffer.len; i++) {
 
-        if (transmit_buffer.len > 0)
-            transmit(packet_buffer);
+            instance.validation_func(buffer[i], user_data, packet_buffer.to_WriteVector(), transmit_buffer.to_WriteVector());
 
-        if (packet_buffer.len > 0) {
-            bool res = instance.process_queue.push(std::move(packet_buffer));
-            if (!res) {
-                Logger<ModuleId::SERIAL_IO>::log(ReadPtr<char>("Process queue full"), LogLevel::WARNING);
+            if (transmit_buffer.len > 0) {
+                LOG_INF("%s%s%d", "Packet Recieved", ": ", counter++);
+                transmit(packet_buffer);
+                transmit_buffer.clear();
             }
-        }
 
+            if (packet_buffer.len > 0) {
+                bool res = instance.process_queue.push(std::move(packet_buffer));
+                if (!res) {
+                    Logger<ModuleId::SERIAL_IO>::log(ReadPtr<char>("Process queue full"), LogLevel::WARNING);
+                }
+                packet_buffer.clear();
+            }
+
+        }
     }
 
     template<const device *dev, uint16_t buffer_size, uint16_t packet_size, uint8_t num_packet_buffers>

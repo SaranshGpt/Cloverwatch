@@ -94,14 +94,21 @@ def stress_test_sender(packet, serial_comm, time_period, num_sends):
 
 def stress_test_receiver(serial_comm, expected_length, num_packets):
 
+    counter = 0;
+
+    start_time = time.time()
+
     for i in range(num_packets):
         rx = serial_comm.wait_for_data(expected_length)
-        if rx is None:
-            raise Exception(f"Timeout occurred. Terminating test.")
+        if len(rx) == 0:
+            raise Exception(f"Timeout occurred after {counter} packets. Terminating test.")
         elif len(rx) != expected_length:
             raise Exception(f"Received packet length does not match expected length. \nExpected length: {expected_length} \nActual length: {len(rx)}\nTerminating test.")
-        else :
-            print(f"Received response packet {i+1}")
+        else:
+            counter += 1
+
+    print(f"Test passed. {counter} packets received. Total time taken: {time.time() - start_time}s")
+
 def run_stress_test(args):
     try:
 

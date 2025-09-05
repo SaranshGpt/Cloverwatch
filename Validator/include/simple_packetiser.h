@@ -37,7 +37,7 @@ namespace Cloverwatch {
     class SimplePacketiser_Block {
 	public:
 
-		void add_bytes(ReadVector<Byte> message_rx, WriteVector<Byte> message_tx);
+		void add_byte(Byte byte, WriteVector<Byte> message_tx);
     	void set_validator_config(ValidatorConfig config);
 
     	void reset();

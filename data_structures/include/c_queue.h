@@ -11,6 +11,10 @@
 
 namespace Cloverwatch {
 
+    class CQueue {
+
+    };
+
     template <typename T, uint16_t capacity>
     class CQueue_concurrent_SPSC {
     public:

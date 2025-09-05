@@ -60,7 +60,7 @@ namespace Cloverwatch {
     }
 
     template <uint16_t buffer_size,  BlockEccFunc encode_func, BlockEccFunc decode_func>
-    void SimplePacketiser_Block<buffer_size, encode_func, decode_func>::add_bytes(ReadVector<Byte> message_rx, WriteVector<Byte> message_tx) {
+    void SimplePacketiser_Block<buffer_size, encode_func, decode_func>::add_byte(Byte byte, WriteVector<Byte> message_tx) {
 
         auto escape_needed = [this](Byte byte) {
             return (curr_state != State::HEADER && curr_state != State::FOOTER) && (byte == config.header_byte || byte == config.footer_byte || byte == config.escape_byte);
@@ -71,102 +71,88 @@ namespace Cloverwatch {
             bytes_since_last_state_change = 0;
         };
 
-        for(size_t curr_ind = 0; curr_ind < message_rx.len; curr_ind++) {
-
-            auto byte = message_rx.ptr.ptr[curr_ind];
-
-            if (escape_expected) {
-                if (byte == config.escape_byte) {
-                    escape_expected = false;
-                }
-                else {
-                    reset();
-                }
-                continue;
+        if (escape_expected) {
+            if (byte == config.escape_byte) {
+                escape_expected = false;
+            } else {
+                reset();
             }
-
-            escape_expected = escape_needed(byte);
-
-            switch (curr_state) {
-                case State::HEADER: {
-                    if (byte != config.header_byte) {
-                        reset();
-                        continue;
-                    }
-
-                    bytes_since_last_state_change++;
-
-                    if (bytes_since_last_state_change == config.header_size)
-                        set_state(State::LENGTH);
-
-                    break;
-                }
-                case State::LENGTH: {
-                    append_length_byte(byte);
-                    bytes_since_last_state_change++;
-                    if (bytes_since_last_state_change == config.length_size) {
-
-                        if (expected_length > buffer_size) {
-                            log_error("Expected length exceeded buffer capacity. Discarding packet");
-                            reset();
-                            continue;
-                        }
-                        else {
-                            set_state(State::PAYLOAD);
-                        }
-                    }
-                    break;
-                }
-                case State::PAYLOAD: {
-                    buffer.push_back(byte);
-                    bytes_since_last_state_change++;
-                    if (bytes_since_last_state_change == expected_length)
-                        set_state(State::FOOTER);
-                    break;
-                }
-                case State::FOOTER: {
-                    if (byte != config.footer_byte) {
-                        reset();
-                        continue;
-                    }
-
-                    bytes_since_last_state_change++;
-
-                    if (bytes_since_last_state_change == config.footer_size) {
-
-                        bool valid;
-
-                        if constexpr (decode_func != nullptr)
-                            valid = decode_func(buffer.to_WriteVector());
-                        else
-                            valid = true;
-
-                        if (valid) {
-                            for (size_t i=0; i<buffer.len; i++) {
-                                message_tx[i] = buffer[i];
-                            }
-                            message_tx.len = buffer.len;
-                        }
-                        else {
-                            log_error("Validation failed. Discarding packet");
-                        }
-
-                        reset();
-                        break;
-                    }
-
-                }
-
-            };
-
+            return;
         }
 
+        escape_expected = escape_needed(byte);
+
+        switch (curr_state) {
+            case State::HEADER: {
+                if (byte != config.header_byte) {
+                    reset();
+                    return;
+                }
+
+                bytes_since_last_state_change++;
+
+                if (bytes_since_last_state_change == config.header_size)
+                    set_state(State::LENGTH);
+
+                break;
+            }
+            case State::LENGTH: {
+                append_length_byte(byte);
+                bytes_since_last_state_change++;
+                if (bytes_since_last_state_change == config.length_size) {
+                    if (expected_length > buffer_size) {
+                        log_error("Expected length exceeded buffer capacity. Discarding packet");
+                        reset();
+                        return;
+                    } else {
+                        set_state(State::PAYLOAD);
+                    }
+                }
+                break;
+            }
+            case State::PAYLOAD: {
+                buffer.push_back(byte);
+                bytes_since_last_state_change++;
+                if (bytes_since_last_state_change == expected_length)
+                    set_state(State::FOOTER);
+                break;
+            }
+            case State::FOOTER: {
+                if (byte != config.footer_byte) {
+                    reset();
+                    return;
+                }
+
+                bytes_since_last_state_change++;
+
+                if (bytes_since_last_state_change == config.footer_size) {
+                    bool valid;
+
+                    if constexpr (decode_func != nullptr)
+                        valid = decode_func(buffer.to_WriteVector());
+                    else
+                        valid = true;
+
+                    if (valid) {
+                        for (size_t i = 0; i < buffer.len; i++) {
+                            message_tx[i] = buffer[i];
+                        }
+                        message_tx.len = buffer.len;
+                    } else {
+                        log_error("Validation failed. Discarding packet");
+                    }
+
+                    reset();
+                    break;
+                }
+            }
+        };
     }
 
-    template <uint16_t buffer_size,  BlockEccFunc encode_func, BlockEccFunc decode_func>
-    void SimplePacketiser_Block<buffer_size, encode_func, decode_func>::construct_packet(ReadVector<Byte> payload, WriteVector<Byte> packet) const {
-
-        for (size_t i=0; i<config.header_size; i++)
+    template<uint16_t buffer_size, BlockEccFunc encode_func, BlockEccFunc decode_func>
+    void SimplePacketiser_Block<buffer_size, encode_func, decode_func>::construct_packet(
+        ReadVector<Byte> payload, WriteVector<Byte> packet) const {
+        for (size_t i = 0; i < config.header_size; i++)
             packet.push_back(config.header_byte);
 
         size_t payload_len = payload.len;

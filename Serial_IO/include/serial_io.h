@@ -35,7 +35,7 @@ namespace Cloverwatch {
 
         static Serial_DMAasync& Instance() { return instance; }
 
-        using process_func = void (*)(ReadVector<Byte> bytes, WriteBufferPtr<void> user_data, WriteVector<Byte> transmit_data, WriteVector<Byte> completed_packet);
+        using process_func = void (*)(Byte byte, WriteBufferPtr<void> user_data, WriteVector<Byte> transmit_data, WriteVector<Byte> completed_packet);
 
         void start_process(process_func validation_func, WriteBufferPtr<void> user_data);
         void stop_process();
