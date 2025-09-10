@@ -40,7 +40,7 @@ namespace Cloverwatch {
         void start_process(process_func validation_func, WriteBufferPtr<void> user_data);
         void stop_process();
 
-        std::optional<Buffer<packet_size>> pop();
+        std::optional<FixedBuffer<packet_size>> pop();
 
     private:
 
@@ -48,7 +48,7 @@ namespace Cloverwatch {
 
 
         CByteQueue_SPSC<buffer_size> validation_queue;
-        CQueue_concurrent_SPSC<Buffer<packet_size>, num_packet_buffers> process_queue;
+        CQueue_concurrent_SPSC<FixedBuffer<packet_size>, num_packet_buffers> process_queue;
 
         process_func validation_func = nullptr;
         WriteBufferPtr<void> user_data = WriteBufferPtr<void>(nullptr);
@@ -57,7 +57,7 @@ namespace Cloverwatch {
         bool current_buffer = 0;
 
         static void uart_callback(const struct device *dev_ptr, struct uart_event *evt, void* user_data);
-        static void transmit(Buffer<packet_size>& bytes);
+        static void transmit(FixedBuffer<packet_size>& bytes);
 
         static void validation_handler(void* args);
 

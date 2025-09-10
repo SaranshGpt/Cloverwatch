@@ -5,62 +5,44 @@
 #ifndef C_TYPES_H
 #define C_TYPES_H
 
-#include "ptr_types.h"
 #include <cstddef>
+#include <cstdint>
 #include <string.h>
+#include <type_traits>
+#include <array>
 
 #include "ptr_types.h"
+#include "mem_pool.h"
 
 namespace Cloverwatch {
 
+    template <typename T>
+    struct Vector;
+
     template <PtrIntent intent, typename T>
     struct IntentVector {
-
-        IntentPtr<intent, T> ptr;
-        size_t &len;
+        T* ptr;
+        size_t& len;
         const size_t capacity;
 
-        constexpr IntentVector(IntentPtr<intent, T> ptr, size_t capacity, size_t &len) : ptr(ptr), len(len), capacity(capacity) {}
-        constexpr IntentVector(T* ptr, size_t capacity, size_t &len) : ptr(IntentPtr<intent, T>(ptr)), len(len), capacity(capacity) {}
+        IntentVector(T* ptr, size_t capacity, size_t &len) : ptr(ptr), len(len), capacity(capacity) {}
 
-        template <PtrIntent other>
-        constexpr std::enable_if_t<
-            other != PtrIntent::READONLY &&
-            other != PtrIntent::COPY_CONTENTS &&
-            other != PtrIntent::BUFFER_READONLY,
-            IntentVector<other, T>
-        > to_intent() {
-            return IntentVector<other, T>(ptr.ptr, capacity, len);
-        }
-
-        template<PtrIntent other>
-        constexpr std::enable_if_t<
-            other == PtrIntent::READONLY ||
-            other == PtrIntent::COPY_CONTENTS ||
-            other == PtrIntent::BUFFER_READONLY,
-            const IntentVector<other, const T>
-        > to_intent() {
-            return IntentVector<other, const T>((const T*)ptr.ptr, capacity, len);
-        }
-
-        constexpr const IntentVector<PtrIntent::READONLY, const T> to_read_vector() { return to_intent<PtrIntent::READONLY>(); }
-        constexpr IntentVector<PtrIntent::READWRITE, T> to_write_vector() { return to_intent<PtrIntent::READWRITE>(); }
-        constexpr const IntentVector<PtrIntent::BUFFER_READONLY, const T> to_buffer_read_vector() { return to_intent<PtrIntent::BUFFER_READONLY>(); }
-        constexpr IntentVector<PtrIntent::BUFFER_READWRITE, T> to_buffer_write_vector() { return to_intent<PtrIntent::BUFFER_READWRITE>(); }
-        constexpr IntentVector<PtrIntent::MOVE_OWNERSHIP, T> to_move_vector() { return to_intent<PtrIntent::MOVE_OWNERSHIP>(); }
-        constexpr const IntentVector<PtrIntent::COPY_CONTENTS, const T> to_copy_vector() { return to_intent<PtrIntent::COPY_CONTENTS>(); }
+        T& operator[](size_t index) { return ptr[index]; }
+        const T& operator[](size_t index) const { return ptr[index]; }
+        T* data() { return ptr; }
+        const T* data() const { return ptr; }
+        T* begin() { return ptr; }
+        const T* begin() const { return ptr; }
+        T* end() { return ptr + len; }
+        const T* end() const { return ptr + len; }
+        bool empty() const { return len == 0; }
+        size_t size() const { return len; }
 
         void push_back(T val) {
-            if (len >= capacity) {
-                return;
-            }
-            ptr.ptr[len++] = val;
+            ptr[len++] = val;
         }
 
         void pop_back() {
-            if (len == 0) {
-                return;
-            }
             len--;
         }
 
@@ -68,30 +50,157 @@ namespace Cloverwatch {
             len = 0;
         }
 
-        constexpr T* data() { return ptr.ptr; }
-        constexpr const T* data() const { return ptr.ptr; }
-        constexpr T& operator[](size_t index) { return ptr.ptr[index]; }
-        constexpr const T& operator[](size_t index) const { return ptr.ptr[index]; }
-        constexpr T* begin() { return ptr.ptr; }
-        constexpr const T* begin() const { return ptr.ptr; }
-        constexpr T* end() { return ptr.ptr + len; }
-        constexpr const T* end() const { return ptr.ptr + len; }
-        constexpr bool empty() const { return len == 0; }
-        constexpr size_t size() const { return len; }
+        const Vector<T> partition(size_t start_ind, size_t end_ind) const {
+            size_t new_len = len > end_ind? end_ind - start_ind : len - start_ind;
+            size_t new_capacity = end_ind - start_ind;
+
+            return Vector<T>(ptr + start_ind, new_capacity, new_len);
+        }
+
+        Vector<T> partition(size_t start_ind, size_t end_ind) {
+
+            size_t new_len = len > end_ind? end_ind - start_ind : len - start_ind;
+            size_t new_capacity = end_ind - start_ind;
+
+            return Vector<T>(ptr + start_ind, new_capacity, new_len);
+        }
+
+        constexpr const IntentVector<PtrIntent::READONLY, T> to_read() {
+            return IntentVector<PtrIntent::READONLY, T>(ptr, capacity, len);
+        }
+
+        constexpr IntentVector<PtrIntent::READWRITE, T> to_write() {
+            return IntentVector<PtrIntent::READWRITE, T>(ptr, capacity, len);
+        }
+
+        constexpr const IntentVector<PtrIntent::BUFFER_READONLY, T> to_buffer_read() {
+            return IntentVector<PtrIntent::BUFFER_READONLY, T>(ptr, capacity, len);
+        }
+
+        constexpr IntentVector<PtrIntent::BUFFER_READWRITE, T> to_buffer_write() {
+            return IntentVector<PtrIntent::BUFFER_READWRITE, T>(ptr, capacity, len);
+        }
+
+        constexpr const IntentVector<PtrIntent::COPY_CONTENTS, T> to_copy() {
+            return IntentVector<PtrIntent::COPY_CONTENTS, T>(ptr, capacity, len);
+        }
+
     };
 
     template <typename T>
-    using ReadVector = const IntentVector<PtrIntent::READONLY, const T>;
+    using ReadVector = const IntentVector<PtrIntent::READONLY, T>;
     template <typename T>
     using WriteVector = IntentVector<PtrIntent::READWRITE, T>;
     template <typename T>
-    using ReadBufferVector = const IntentVector<PtrIntent::BUFFER_READONLY, const T>;
+    using ReadBufferVector = const IntentVector<PtrIntent::BUFFER_READONLY, T>;
     template <typename T>
     using WriteBufferVector = IntentVector<PtrIntent::BUFFER_READWRITE, T>;
     template <typename T>
-    using MoveVector = IntentVector<PtrIntent::MOVE_OWNERSHIP, T>;
+    using MoveVector = Vector<T>&&;
     template <typename T>
-    using CopyVector = const IntentVector<PtrIntent::COPY_CONTENTS, const T>;
+    using CopyVector = const IntentVector<PtrIntent::COPY_CONTENTS, T>;
+
+    template <typename T>
+    struct Vector {
+        T* ptr;
+        size_t len;
+        const size_t capacity;
+
+        constexpr Vector(T* ptr, size_t capacity, size_t len) : ptr(ptr), len(len), capacity(capacity) {}
+
+        T& operator[](size_t index) { return ptr[index]; }
+        const T& operator[](size_t index) const { return ptr[index]; }
+        T* data() { return ptr; }
+        const T* data() const { return ptr; }
+        T* begin() { return ptr; }
+        const T* begin() const { return ptr; }
+        T* end() { return ptr + len; }
+        const T* end() const { return ptr + len; }
+        bool empty() const { return len == 0; }
+        size_t size() const { return len; }
+
+        void push_back(T val) {
+            ptr[len++] = val;
+        }
+
+        void pop_back() {
+            len--;
+        }
+
+        void clear() {
+            len = 0;
+        }
+
+        T& back() {
+            return ptr[len-1];
+        }
+
+        const Vector<T> partition(size_t start_ind, size_t end_ind) const {
+            size_t new_len = len > end_ind? end_ind - start_ind : len - start_ind;
+            size_t new_capacity = end_ind - start_ind;
+
+            return Vector<T>(ptr + start_ind, new_len, new_capacity);
+        }
+
+        Vector<T> partition(size_t start_ind, size_t end_ind) {
+
+            size_t new_len = len > end_ind? end_ind - start_ind : len - start_ind;
+            size_t new_capacity = end_ind - start_ind;
+
+            return Vector<T>(ptr + start_ind, new_len, new_capacity);
+        }
+
+        constexpr ReadVector<T> to_read() {
+            return ReadVector<T>(ptr, capacity, len);
+        }
+
+        constexpr WriteVector<T> to_write() {
+            return WriteVector<T>(ptr, capacity, len);
+        }
+
+        constexpr ReadBufferVector<T> to_buffer_read() {
+            return ReadBufferVector<T>(ptr, capacity, len);
+        }
+
+        constexpr WriteBufferVector<T> to_buffer_write() {
+            return WriteBufferVector<T>(ptr, capacity, len);
+        }
+
+        constexpr CopyVector<T> to_copy() {
+            return CopyVector<T>(ptr, capacity, len);
+        }
+
+        constexpr MoveVector<T> to_move() {
+            return std::move(*this);
+        }
+
+    };
+
+    template <typename T, Heap *heap>
+    struct HeapVector: Vector<T> {
+        HeapVector(size_t capacity, size_t len) : Vector<T>(heap->allocate<T>(capacity), capacity, len) {}
+        HeapVector(size_t capacity) : HeapVector(capacity, 0) {}
+        HeapVector() : HeapVector(nullptr, 0, 0) {}
+
+        void realloc(size_t new_capacity) {
+            T* new_ptr = heap->allocate<T>(new_capacity);
+
+            if (this->ptr != nullptr) {
+                memcpy(new_ptr, this->ptr, this->len * sizeof(T));
+                heap->free(this->ptr);
+            }
+
+            this->ptr = new_ptr;
+            this->capacity = new_capacity;
+        }
+
+        void free() {
+            heap->free(Vector<T>::ptr);
+            Vector<T>::ptr = nullptr;
+            Vector<T>::capacity = 0;
+            Vector<T>::len = 0;
+        }
+    };
 
     using Byte = uint8_t;
 
@@ -109,27 +218,28 @@ namespace Cloverwatch {
         return IntentVector<intent, char>(string, size);
     }
 
-    template <size_t buffer_size>
-    struct Buffer {
-        std::array<Byte, buffer_size> buffer;
+    template <typename T, size_t buffer_size>
+    struct FixedVector {
+        std::array<T, buffer_size> buffer;
         size_t len = 0;
 
-        Byte& operator[](int index) { return buffer[index]; }
-        const Byte& operator[](int index) const { return buffer[index]; }
-        Byte* data() { return buffer.data(); }
-        const Byte* data() const { return buffer.data(); }
-        Byte* begin() { return buffer.data(); }
-        const Byte* begin() const { return buffer.data(); }
-        Byte* end() { return buffer.data() + len; }
-        const Byte* end() const { return buffer.data() + len; }
+        T& operator[](int index) { return buffer[index]; }
+        const T& operator[](int index) const { return buffer[index]; }
+        T* data() { return buffer.data(); }
+        const T* data() const { return buffer.data(); }
+        T* begin() { return buffer.data(); }
+        const T* begin() const { return buffer.data(); }
+        T* end() { return buffer.data() + len; }
+        const T* end() const { return buffer.data() + len; }
         bool empty() const { return len == 0; }
         size_t size() const { return len; }
+        T& back() { return buffer[len-1]; }
 
-        void fill(Byte val, int start_ind = 0, int end_ind = buffer_size) {
+        void fill(T val, int start_ind = 0, int end_ind = buffer_size) {
             memset(buffer.data() + start_ind, val, end_ind - start_ind);
         }
 
-        void push_back(Byte val) {
+        void push_back(T val) {
             buffer[len++] = val;
         }
 
@@ -141,15 +251,18 @@ namespace Cloverwatch {
             len = 0;
         }
 
-        constexpr ReadVector<Byte> to_ReadVector() {
-            return ReadVector<Byte>(buffer.data(), buffer_size, len);
+        constexpr ReadVector<T> to_read() {
+            return ReadVector<T>(buffer.data(), buffer_size, len);
         }
 
-        constexpr WriteVector<Byte> to_WriteVector() {
-            return WriteVector<Byte>(buffer.data(), buffer_size, len);
+        constexpr WriteVector<T> to_write() {
+            return WriteVector<T>(buffer.data(), buffer_size, len);
         }
 
     };
+
+    template <size_t buffer_size>
+    using FixedBuffer = FixedVector<Byte, buffer_size>;
 
 }
 

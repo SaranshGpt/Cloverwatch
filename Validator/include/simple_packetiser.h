@@ -62,7 +62,7 @@ namespace Cloverwatch {
 
     	uint64_t expected_length = 0;
 
-		Buffer<buffer_size> buffer;
+		FixedBuffer<buffer_size> buffer;
 
     	void append_length_byte(Byte byte);
 

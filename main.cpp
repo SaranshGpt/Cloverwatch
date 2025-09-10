@@ -10,6 +10,8 @@
 #include "Validator/include/simple_packetiser.h"
 #include "Validator/include/reed_soloman.h"
 
+#include "PatternMatcher/include/pattern.h"
+
 namespace Cloverwatch {
 
     using Serial_IO_Wire = Serial_DMAasync<DEVICE_DT_GET(DT_NODELABEL(uart1)), 1024, 1024, 4>;
@@ -35,12 +37,12 @@ namespace Cloverwatch {
 
         if (completed_packet.len > 0) {
             transmit_data.clear();
-            validator->construct_packet(completed_packet.to_read_vector(), transmit_data);
+            validator->construct_packet(completed_packet.to_read(), transmit_data);
         }
     }
 
     void serial_IOWIRE_startup() {
-        Serial_IO_Wire::Instance().start_process(validation_func, WriteBufferPtr<void>((void*)&validator));
+        Serial_IO_Wire::Instance().start_process(validation_func, WriteBufferPtr<void>(&validator));
 
         if (!device_is_ready(DEVICE_DT_GET(DT_NODELABEL(uart1)))) {
             Logger<ModuleId::MAIN_THREAD>::log(ReadPtr<char>("UART not ready"), LogLevel::ERROR);

@@ -7,9 +7,9 @@
 
 namespace Cloverwatch {
 
-    namespace RegexConfig {
+    namespace PatternConfig {
 
-        constexpr int max_depth = 5;
+        constexpr int max_conditions = 20;
 
     }
 

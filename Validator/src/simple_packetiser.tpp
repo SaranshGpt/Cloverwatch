@@ -129,7 +129,7 @@ namespace Cloverwatch {
                     bool valid;
 
                     if constexpr (decode_func != nullptr)
-                        valid = decode_func(buffer.to_WriteVector());
+                        valid = decode_func(buffer.to_write());
                     else
                         valid = true;
 
@@ -175,7 +175,7 @@ namespace Cloverwatch {
 
         size_t temp_len = payload.len;
 
-        encode_func(WriteVector<Byte>(packet.ptr.ptr + packet.len, packet.capacity - packet.len, temp_len));
+        encode_func(WriteVector<Byte>(packet.ptr + packet.len, packet.capacity - packet.len, temp_len));
 
         packet.len = temp_len + config.header_size + config.length_size;
 

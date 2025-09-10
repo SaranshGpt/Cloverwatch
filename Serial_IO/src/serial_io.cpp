@@ -18,26 +18,22 @@ namespace Cloverwatch {
     template <const device* dev, uint16_t buffer_size, uint16_t packet_size, uint8_t num_packet_buffers>
     void Serial_DMAasync<dev, buffer_size, packet_size, num_packet_buffers>::validation_handler(void* args) {
 
-        Buffer<buffer_size> buffer;
+        FixedBuffer<buffer_size> buffer;
 
         auto& instance = This_Type::instance;
 
-        instance.validation_queue.pop(
-            buffer.to_WriteVector());
+        instance.validation_queue.pop(buffer.to_write());
 
         auto user_data = This_Type::Instance().user_data;
 
-        Buffer<packet_size> packet_buffer;
-        Buffer<packet_size> transmit_buffer;
-
-        static int counter = 0;
+        FixedBuffer<packet_size> packet_buffer;
+        FixedBuffer<packet_size> transmit_buffer;
 
         for (size_t i=0; i<buffer.len; i++) {
 
-            instance.validation_func(buffer[i], user_data, packet_buffer.to_WriteVector(), transmit_buffer.to_WriteVector());
+            instance.validation_func(buffer[i], user_data, packet_buffer.to_write(), transmit_buffer.to_write());
 
             if (transmit_buffer.len > 0) {
-                LOG_INF("%s%s%d", "Packet Recieved", ": ", counter++);
                 transmit(packet_buffer);
                 transmit_buffer.clear();
             }
@@ -72,9 +68,9 @@ namespace Cloverwatch {
             case UART_RX_RDY: {
                 auto& [buf, offset, len] = evt->data.rx;
 
-                if (! this_ptr->validation_queue.push(ReadVector<Byte>(
-                    ReadPtr<Byte>(buf + offset), len, len
-                ))) {
+                Vector<Byte> buffer(buf + offset, len, len);
+
+                if (! this_ptr->validation_queue.push(buffer.to_read())) {
                     Logger<ModuleId::SERIAL_IO>::log(ReadPtr<char>("Validation queue full"), LogLevel::WARNING);
                 }
                 break;
@@ -128,12 +124,12 @@ namespace Cloverwatch {
     }
 
     template <const device* dev, uint16_t buffer_size, uint16_t packet_size, uint8_t num_packet_buffers>
-    std::optional<Buffer<packet_size>> Serial_DMAasync<dev, buffer_size, packet_size, num_packet_buffers>::pop() {
+    std::optional<FixedBuffer<packet_size>> Serial_DMAasync<dev, buffer_size, packet_size, num_packet_buffers>::pop() {
         return process_queue.pop();
     }
 
     template <const device* dev, uint16_t buffer_size, uint16_t packet_size, uint8_t num_packet_buffers>
-    void Serial_DMAasync<dev, buffer_size, packet_size, num_packet_buffers>::transmit(Buffer<packet_size>& bytes) {
+    void Serial_DMAasync<dev, buffer_size, packet_size, num_packet_buffers>::transmit(FixedBuffer<packet_size>& bytes) {
 
         int res = uart_tx(dev, bytes.buffer.data(), bytes.len, K_NO_WAIT.ticks);
 

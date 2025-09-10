@@ -5,6 +5,8 @@
 #ifndef PTR_TYPES_H
 #define PTR_TYPES_H
 
+#include <type_traits>
+
 namespace Cloverwatch {
 
     enum class PtrIntent {

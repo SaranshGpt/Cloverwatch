@@ -1,5 +1,7 @@
 add_library(PatternMatcher)
 
+find_package(Zephyr)
+
 target_include_directories(
         PatternMatcher
         PUBLIC
@@ -8,5 +10,9 @@ target_include_directories(
 
 target_sources(
         PatternMatcher PRIVATE
-        src/regex.cpp
+        src/pattern.cpp
+)
+
+target_link_libraries(
+        PatternMatcher zephyr_interface
 )
