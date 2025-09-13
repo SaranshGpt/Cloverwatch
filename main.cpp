@@ -11,6 +11,7 @@
 #include "Validator/include/reed_soloman.h"
 
 #include "PatternMatcher/include/pattern.h"
+#include "PatternMatcher/include/pattern_stats.h"
 
 namespace Cloverwatch {
 

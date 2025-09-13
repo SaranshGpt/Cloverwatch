@@ -28,6 +28,10 @@ namespace Cloverwatch::Pattern {
 
         size_t start_range = condition.start_range;
         size_t end_range = condition.end_range;
+
+        if (end_range > data.size()) return false;
+        if (start_range > end_range) return false;
+
         size_t size = end_range - start_range;
 
         auto match_fixed = [&](const size_t offset = 0)  {
@@ -76,7 +80,7 @@ namespace Cloverwatch::Pattern {
 
     bool match_pattern(ReadVector<Byte> data, Pattern& pattern) {
 
-        FixedVector<bool, PatternConfig::max_conditions> stack;
+        FixedVector<bool, PatternConfig::max_stack_size> stack;
 
         size_t cond_index = 0;
 
@@ -125,6 +129,8 @@ namespace Cloverwatch::Pattern {
         size_t curr_ind = 0;
 
         const auto num_conds = get_uint16(notation, curr_ind);
+
+        if (num_conds < 0) return std::nullopt;
 
         pattern.conditions.realloc(num_conds);
 
@@ -199,7 +205,7 @@ namespace Cloverwatch::Pattern {
             else
                 stack_size--;
 
-            if (stack_size < 0) {
+            if (stack_size <= 0) {
                 Logger<ModuleId::PATTERN_MATCHER>::log(ReadPtr<char>("Invalid Notation Recieved"));
                 pattern.free_memory();
                 return std::nullopt;
@@ -207,9 +213,7 @@ namespace Cloverwatch::Pattern {
             pattern.operations.push_back(op_type);
         }
 
-        //TODO: Add more granular error detection and handling. Especially buffer overflows
-
-        if (stack_size > 0) {
+        if (stack_size > 1) {
             pattern.free_memory();
             return std::nullopt;
         }

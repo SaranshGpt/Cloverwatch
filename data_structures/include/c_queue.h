@@ -15,15 +15,15 @@ namespace Cloverwatch {
 
     };
 
-    template <typename T, uint16_t capacity>
+    template <typename T, size_t capacity>
     class CQueue_concurrent_SPSC {
     public:
 
         std::optional<T> pop();
         bool push(T&& val);
 
-        uint16_t remaining_capacity() const;
-        uint16_t size() const;
+        size_t remaining_capacity() const;
+        size_t size() const;
 
         bool empty() const;
         bool full() const;
@@ -38,7 +38,7 @@ namespace Cloverwatch {
 
     };
 
-    template <uint16_t capacity>
+    template <size_t capacity>
     class CByteQueue_SPSC {
     public:
 
@@ -50,8 +50,8 @@ namespace Cloverwatch {
         std::optional<Byte> pop();
         void pop(WriteVector<Byte> buffer);
 
-        inline uint16_t remaining_capacity() const;
-        inline uint16_t size() const;
+        inline size_t remaining_capacity() const;
+        inline size_t size() const;
 
         inline bool empty() const;
         inline bool full() const;

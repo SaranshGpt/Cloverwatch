@@ -11,6 +11,7 @@ target_include_directories(
 target_sources(
         PatternMatcher PRIVATE
         src/pattern.cpp
+        src/pattern_stats.cpp
 )
 
 target_link_libraries(

@@ -9,7 +9,8 @@ namespace Cloverwatch {
 
     namespace PatternConfig {
 
-        constexpr int max_conditions = 20;
+        constexpr int max_stack_size = 20;
+        constexpr int heap_size = 1024 * 20;
 
     }
 
