@@ -30,24 +30,24 @@ namespace Cloverwatch::Pattern {
         size_t end_range = condition.end_range;
         size_t size = end_range - start_range;
 
-        auto match_fixed = [&](size_t offset = 0) -> bool {
+        auto match_fixed = [&](const size_t offset = 0)  {
             size_t ind = 0;
-            for (; ind<size && data[ind + start_range] == condition.vals[ind + offset]; ind++){}
+            for (; ind<size && data[ind + start_range] == condition.vals[ind + offset]; ind++);
             return size == ind;
         };
 
-        auto lexical_between = [&]() -> bool {
+        auto lexical_between = [&]() {
             size_t ind;
-            for (ind = 0; ind < size && data[ind + start_range] == condition.vals[ind]; ind++){}
+            for (ind = 0; ind < size && data[ind + start_range] == condition.vals[ind]; ind++);
 
             if (ind < size && data[ind + start_range] < condition.vals[ind]) return false;
 
-            for (ind = 0; ind < size && data[ind + start_range] == condition.vals[ind + size]; ind++){}
+            for (ind = 0; ind < size && data[ind + start_range] == condition.vals[ind + size]; ind++);
 
             return ind == size || data[ind + start_range] <= condition.vals[ind + size];
         };
 
-        auto match_selection = [&]() -> bool {
+        auto match_selection = [&]() {
             for (size_t offset = 0; offset < condition.vals.size(); offset += size) {
                 if (match_fixed(offset)) return true;
             }
@@ -57,7 +57,7 @@ namespace Cloverwatch::Pattern {
 
         switch (condition.type) {
             case ConditionType::FIXED:
-                return match_selection();
+                return match_fixed();
             case ConditionType::RANGE:
                 return lexical_between();
             case ConditionType::SELECTION:
@@ -80,42 +80,38 @@ namespace Cloverwatch::Pattern {
 
         size_t cond_index = 0;
 
-        for (auto op: pattern.operations) {
+        for (const auto op: pattern.operations) {
 
             if (op == OperationType::PUSH) {
                 stack.push_back(evaluate_condition(data, pattern.conditions[cond_index++]));
                 continue;
             }
 
-            bool val1 = stack.back();
-            stack.pop_back();
-            bool val2 = stack.back();
+            const bool val = stack.back();
             stack.pop_back();
 
             switch (op) {
                 case OperationType::OR:
-                    val1 |= val2;
+                    stack.back() |= val;
                     break;
                 case OperationType::AND:
-                    val1 &= val2;
+                    stack.back() &= val;
                     break;
                 case OperationType::NOR:
-                    val1  = !(val1 | val2);
+                    stack.back()  = !(stack.back() | val);
                     break;
                 case OperationType::NAND:
-                    val1  = !(val1 & val2);
+                    stack.back()  = !(stack.back() & val);
                     break;
                 case OperationType::XOR:
-                    val1  ^= val2;
+                    stack.back()  ^= val;
                     break;
                 case OperationType::XNOR:
-                    val1  = !(val1 ^ val2);
+                    stack.back() = !(stack.back() ^ val);
                     break;
                 default:
                     break;
             }
-
-            stack.push_back(val1);
         }
 
         return stack.back();
@@ -137,6 +133,11 @@ namespace Cloverwatch::Pattern {
 
             const auto start_range = get_uint16(notation, curr_ind);
             const auto end_range = get_uint16(notation, curr_ind);
+
+            if (curr_ind >= notation.size()) {
+                pattern.free_memory();
+                return std::nullopt;
+            }
 
             pattern.conditions.push_back(Condition());
 
@@ -170,13 +171,16 @@ namespace Cloverwatch::Pattern {
                     break;
             }
 
+            if (curr_ind + vals_size >= notation.size()) {
+                pattern.free_memory();
+                return std::nullopt;
+            }
+
             cond.vals.realloc(vals_size);
 
             for (int j=0; j<vals_size; j++) {
                 cond.vals.push_back(notation[curr_ind++]);
             }
-
-            pattern.conditions.push_back(cond);
 
         }
 
