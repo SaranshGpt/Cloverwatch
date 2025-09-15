@@ -7,8 +7,10 @@
 
 namespace Cloverwatch::Pattern {
 
-    template <size_t capacity, size_t max_patterns>
-    StatTracker<capacity, max_patterns>::StatTracker() {
+#define
+
+    template <size_t max_patterns, size_t history_length>
+    StatResult add_packet(ReadVector<Byte> packet) {
 
     }
 

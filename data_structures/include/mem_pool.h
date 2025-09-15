@@ -24,6 +24,11 @@ namespace Cloverwatch {
             //TODO: Add error handling
         }
 
+        template <>
+        void* allocate(const size_t num_bytes) {
+            return k_heap_alloc(heap, num_bytes, K_NO_WAIT);
+        }
+
         void free(void* ptr) {
             k_heap_free(heap, ptr);
         }

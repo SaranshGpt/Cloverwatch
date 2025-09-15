@@ -12,36 +12,42 @@
 #include "../../data_structures/include/c_queue.h"
 #include "../../data_structures/include/c_linked_deque.h"
 #include "../../data_structures/include/c_types.h"
+#include "../../data_structures/include/time.h"
 
 namespace Cloverwatch::Pattern {
+
+    enum class StatResult {
+        OK,
+        INSUFFICIENT_CAPACITY,
+        INVALID_NOTATION
+    };
 
     template <size_t max_patterns, size_t history_length>
     class StatTracker {
 
     public:
 
-        enum class Result {
-            OK,
-            INSUFFICIENT_CAPACITY,
-            INVALID_NOTATION
-        };
-
         inline size_t remaining_capacity() const;
         inline size_t size() const;
 
-        Result add_packet(ReadVector<Byte> packet);
-        Result add_pattern(ReadPtr<char> name, ReadVector<Byte> notation);
+        StatResult add_packet(ReadVector<Byte> packet);
+        StatResult add_pattern(ReadPtr<char> name, ReadVector<Byte> notation);
+
+        StatTracker() = default;
 
     private:
 
         struct PatternInfo {
-
+            char* name = nullptr;
+            Pattern pattern;
+            size_t num_instances = 0;
+            CQueue_concurrent_SPSC<Time, history_length> timestamps;
         };
 
-        CByteQueue_SPSC<packet_buffer_size> packet_queue;
-        FixedBuffer<packet_buffer_size> packet_buffer;
+        CLinkedDeque<Byte, &pattern_heap, 128> PacketQueue;
+        FixedVector<PatternInfo, max_patterns> patterns;
 
-        StatTracker();
+        static void ProcessFunc(void* instance);
     };
 
 }
