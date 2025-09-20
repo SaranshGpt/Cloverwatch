@@ -10,45 +10,21 @@
 
 namespace Cloverwatch {
 
-	enum class Endianness {
-		LITTLE,
-		BIG
-	};
-
-    struct ValidatorConfig {
-        Byte header_byte;
-        uint8_t header_size;
-
-        Byte footer_byte;
-        uint8_t footer_size;
-
-        Byte escape_byte;
-
-        uint8_t length_size;
-
-    	Endianness endianness;
-    };
-
 	using BlockEccFunc = bool (*)(WriteVector<Byte> message_rx);
 
 	//TODO: Implement Header CRC for Block Validator.  Right now there is nothing handling erros in header values. Skipping this now as the header is only length as of now
 
-    template <uint16_t buffer_size, BlockEccFunc encode_func, BlockEccFunc decode_func>
+    template <typename G, typename L, BlockEccFunc encode_func, BlockEccFunc decode_func>
     class SimplePacketiser_Block {
 	public:
 
 		void add_byte(Byte byte, WriteVector<Byte> message_tx);
-    	void set_validator_config(ValidatorConfig config);
 
     	void reset();
 
     	void construct_packet(ReadVector<Byte> payload, WriteVector<Byte> packet) const;
 
-    	constexpr explicit SimplePacketiser_Block(ValidatorConfig config) : config(config) {}
-
 	private:
-
-    	ValidatorConfig config;
 
 		enum class State {
 			HEADER,
@@ -62,7 +38,7 @@ namespace Cloverwatch {
 
     	uint64_t expected_length = 0;
 
-		FixedBuffer<buffer_size> buffer;
+		FixedBuffer<G::max_packet_size> buffer;
 
     	void append_length_byte(Byte byte);
 

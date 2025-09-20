@@ -22,16 +22,14 @@
 
 namespace Cloverwatch {
 
-    template <const device* dev, uint16_t buffer_size, uint16_t packet_size, uint8_t num_packet_buffers>
+    template <typename G, typename L>
     class Serial_DMAasync {
 
+        using PacketBuffer = FixedBuffer<G::max_packet_size>;
+
+        using This_Type = Serial_DMAasync<G, L>;
+
     public:
-
-        static_assert(buffer_size > 0, "Invalid buffer size");
-        static_assert(packet_size > 0, "Invalid value of packet_size");
-        static_assert(num_packet_buffers > 0, "Invalid value of num_packet_buffers");
-
-        using This_Type = Serial_DMAasync<dev, buffer_size, packet_size, num_packet_buffers>;
 
         static Serial_DMAasync& Instance() { return instance; }
 
@@ -40,24 +38,23 @@ namespace Cloverwatch {
         void start_process(process_func validation_func, WriteBufferPtr<void> user_data);
         void stop_process();
 
-        std::optional<FixedBuffer<packet_size>> pop();
+        std::optional<PacketBuffer> pop();
 
     private:
 
         static Serial_DMAasync instance;
 
-
-        CByteQueue_SPSC<buffer_size> validation_queue;
-        CQueue_concurrent_SPSC<FixedBuffer<packet_size>, num_packet_buffers> process_queue;
+        CByteQueue_SPSC<L::dma_buffer_size> validation_queue;
+        CQueue_concurrent_SPSC<PacketBuffer, L::num_packet_buffers> process_queue;
 
         process_func validation_func = nullptr;
         WriteBufferPtr<void> user_data = WriteBufferPtr<void>(nullptr);
 
-        std::array<std::array<uint8_t, buffer_size>, 2> buffer_pair;
+        std::array<std::array<uint8_t, L::dma_buffer_size>, 2> buffer_pair;
         bool current_buffer = 0;
 
         static void uart_callback(const struct device *dev_ptr, struct uart_event *evt, void* user_data);
-        static void transmit(FixedBuffer<packet_size>& bytes);
+        static void transmit(PacketBuffer& bytes);
 
         static void validation_handler(void* args);
 

@@ -6,7 +6,7 @@
 
 namespace Cloverwatch {
 
-    K_KERNEL_STACK_ARRAY_DEFINE(ThreadStacks, 5, TaskManagerConfig::STACK_SIZE);
+    K_KERNEL_STACK_ARRAY_DEFINE(ThreadStacks, 5, 1024);
 
     TaskManager TaskManager::instance = TaskManager();
 
@@ -58,7 +58,7 @@ namespace Cloverwatch {
             stack = ThreadStacks[ind];
 
             k_work_queue_init(&work_q);
-            k_work_queue_start(&work_q, stack, TaskManagerConfig::STACK_SIZE, priority_values[ind++], nullptr);
+            k_work_queue_start(&work_q, stack, 1024, priority_values[ind++], nullptr);
         }
     }
 

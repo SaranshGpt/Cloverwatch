@@ -13,6 +13,7 @@
 #include "../../data_structures/include/c_linked_deque.h"
 #include "../../data_structures/include/c_types.h"
 #include "../../data_structures/include/time.h"
+#include "../../data_structures/include/c_mutex.h"
 
 namespace Cloverwatch::Pattern {
 
@@ -22,16 +23,15 @@ namespace Cloverwatch::Pattern {
         INVALID_NOTATION
     };
 
-    template <size_t max_patterns, size_t history_length>
+    template <typename G, typename L>
     class StatTracker {
 
     public:
 
-        inline size_t remaining_capacity() const;
-        inline size_t size() const;
-
         StatResult add_packet(ReadVector<Byte> packet);
-        StatResult add_pattern(ReadPtr<char> name, ReadVector<Byte> notation);
+        StatResult add_pattern(ReadBufferPtr<char> name, ReadVector<Byte> notation);
+
+        void start_process();
 
         StatTracker() = default;
 
@@ -41,13 +41,28 @@ namespace Cloverwatch::Pattern {
             char* name = nullptr;
             Pattern pattern;
             size_t num_instances = 0;
-            CQueue_concurrent_SPSC<Time, history_length> timestamps;
+            CQueue_concurrent_SPSC<Time, L::history_length> timestamps;
         };
 
-        CLinkedDeque<Byte, &pattern_heap, 128> PacketQueue;
-        FixedVector<PatternInfo, max_patterns> patterns;
+        enum class PacketStep {
+            MSB,
+            LSB,
+            PACKET
+        };
 
-        static void ProcessFunc(void* instance);
+        struct PacketState {
+            FixedBuffer<G::max_packet_size> packet_buffer;
+            uint16_t expected_bytes;
+            PacketStep step;
+        } packet_state;
+
+        CLinkedDeque<Byte, &pattern_heap, 128> packet_queue;
+        FixedVector<PatternInfo, L::max_patterns> patterns;
+
+        Mutex packet_mtx;
+        Mutex pattern_mtx;
+
+        static void packet_process_func(void* instance);
     };
 
 }

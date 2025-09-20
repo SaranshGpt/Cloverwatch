@@ -9,8 +9,9 @@
 #include <zephyr/kernel.h>
 
 #include "../../data_structures/include/c_types.h"
+#include "../../data_structures/include/c_heap_vec.h"
 #include "../../data_structures/include/mem_pool.h"
-#include "../compile_time_init/pattern_config.h"
+#include "../../system_config.h"
 
 namespace Cloverwatch::Pattern {
 

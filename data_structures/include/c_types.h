@@ -12,7 +12,6 @@
 #include <array>
 
 #include "ptr_types.h"
-#include "mem_pool.h"
 
 namespace Cloverwatch {
 
@@ -104,7 +103,7 @@ namespace Cloverwatch {
     struct Vector {
         T* ptr;
         size_t len;
-        const size_t capacity;
+        size_t capacity;
 
         constexpr Vector(T* ptr, size_t capacity, size_t len) : ptr(ptr), len(len), capacity(capacity) {}
 
@@ -174,42 +173,6 @@ namespace Cloverwatch {
             return std::move(*this);
         }
 
-    };
-
-    template <typename T, Heap *heap>
-    struct HeapVector: Vector<T> {
-        HeapVector(size_t capacity, size_t len) : Vector<T>(nullptr, capacity, len) {
-            this->ptr = heap->allocate<T>(capacity);
-            if (this->ptr == nullptr) {
-                this->len = 0;
-                this->capacity = 0;
-            }
-        }
-        HeapVector(size_t capacity) : HeapVector(capacity, 0) {}
-        HeapVector() : HeapVector(nullptr, 0, 0) {}
-
-        bool realloc(size_t new_capacity) {
-            T* new_ptr = heap->allocate<T>(new_capacity);
-
-            if (new_ptr == nullptr) {
-                return false;
-            }
-
-            if (this->ptr != nullptr) {
-                memcpy(new_ptr, this->ptr, this->len * sizeof(T));
-                heap->free(this->ptr);
-            }
-
-            this->ptr = new_ptr;
-            this->capacity = new_capacity;
-        }
-
-        void free() {
-            heap->free(Vector<T>::ptr);
-            Vector<T>::ptr = nullptr;
-            Vector<T>::capacity = 0;
-            Vector<T>::len = 0;
-        }
     };
 
     using Byte = uint8_t;

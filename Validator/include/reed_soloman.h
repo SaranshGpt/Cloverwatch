@@ -15,10 +15,10 @@
 
 namespace Cloverwatch {
 
-    namespace RS_Validator {
-
-        template <uint8_t chunk_size, uint8_t max_symbols>
-        bool decode(WriteVector<Byte> message_rx) {
+    template <uint8_t chunk_size, uint8_t max_symbols>
+    class RS_Validator {
+    public:
+        static bool decode(WriteVector<Byte> message_rx) {
             uint16_t rx_len = message_rx.len;
             bool decode_res = SSFRSDecode(message_rx.data(), message_rx.len, &rx_len, max_symbols, chunk_size);
             message_rx.len = rx_len;
@@ -26,8 +26,7 @@ namespace Cloverwatch {
             return decode_res && validate_crc(message_rx.to_read(), 4);
         }
 
-        template <uint8_t chunk_size, uint8_t max_symbols>
-        bool encode(WriteVector<Byte> message_buffer) {
+        static bool encode(WriteVector<Byte> message_buffer) {
 
             if (message_buffer.capacity < message_buffer.len + max_symbols * chunk_size) {
                 return false;
@@ -49,7 +48,8 @@ namespace Cloverwatch {
 
             return true;
         }
-    }
+
+    };
 
 }
 

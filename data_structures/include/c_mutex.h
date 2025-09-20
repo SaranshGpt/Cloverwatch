@@ -32,6 +32,7 @@ namespace Cloverwatch {
 
         MutexLock(Mutex& mtx): mtx(mtx) {
             this->mtx = mtx;
+            mtx.lock();
         }
         ~MutexLock() {
             mtx.unlock();

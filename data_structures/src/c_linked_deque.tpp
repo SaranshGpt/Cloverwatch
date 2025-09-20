@@ -9,7 +9,7 @@
 
 namespace Cloverwatch {
 
-#define CLinkedNode CLinkedDeque<T, heap, standard_block_size>::Node
+#define CLinkedNode typename CLinkedDeque<T, heap, standard_block_size>::Node
 
     template <typename T, Heap* heap, size_t standard_block_size>
     CLinkedNode* CLinkedDeque<T, heap, standard_block_size>::allocate_node(Direction dir) {

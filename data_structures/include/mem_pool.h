@@ -20,15 +20,12 @@ namespace Cloverwatch {
 
         template <typename T>
         T* allocate(const size_t num = 1) {
-            return static_cast<T*>(k_heap_alloc(heap, sizeof(T) * num, K_NO_WAIT));
+            if constexpr (std::is_same_v<T, void>)
+                return k_heap_alloc(heap, num, K_NO_WAIT);
+            else
+                return static_cast<T*>(k_heap_alloc(heap, sizeof(T) * num, K_NO_WAIT));
             //TODO: Add error handling
         }
-
-        template <>
-        void* allocate(const size_t num_bytes) {
-            return k_heap_alloc(heap, num_bytes, K_NO_WAIT);
-        }
-
         void free(void* ptr) {
             k_heap_free(heap, ptr);
         }

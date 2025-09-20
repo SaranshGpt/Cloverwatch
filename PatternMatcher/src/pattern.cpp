@@ -11,7 +11,7 @@
 
 namespace Cloverwatch::Pattern {
 
-    DEFINE_HEAP(pattern_heap, 1024 * 20);
+    DEFINE_HEAP(pattern_heap, PatternConfig::heap_size);
 
     static uint16_t get_uint16(ReadVector<Byte> data, size_t &offset) {
 
@@ -184,7 +184,7 @@ namespace Cloverwatch::Pattern {
 
             cond.vals.realloc(vals_size);
 
-            for (int j=0; j<vals_size; j++) {
+            for (size_t j=0; j<vals_size; j++) {
                 cond.vals.push_back(notation[curr_ind++]);
             }
 

@@ -12,8 +12,9 @@ target_sources(
         PatternMatcher PRIVATE
         src/pattern.cpp
         src/pattern_stats.cpp
+        compile_time_init/pattern_template_config.cpp
 )
 
 target_link_libraries(
-        PatternMatcher zephyr_interface
+        PatternMatcher zephyr_interface TaskManager Logger
 )

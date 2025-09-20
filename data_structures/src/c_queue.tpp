@@ -3,7 +3,7 @@
 //
 
 // ReSharper disable once CppMissingIncludeGuard
-#include "logger.h"
+#include "../../Logger/include/logger.h"
 #include "../include/c_queue.h"
 
 namespace Cloverwatch {
