@@ -132,10 +132,10 @@ namespace Cloverwatch {
                         valid = true;
 
                     if (valid) {
-                        for (size_t i = 0; i < buffer.len; i++) {
+                        for (size_t i = 0; i < buffer.size(); i++) {
                             message_tx[i] = buffer[i];
                         }
-                        message_tx.len = buffer.len;
+                        message_tx.set_len(buffer.size());
                     } else {
                         log_error("Validation failed. Discarding packet");
                     }
@@ -153,7 +153,7 @@ namespace Cloverwatch {
         for (size_t i = 0; i < L::header_size; i++)
             packet.push_back(L::header_byte);
 
-        size_t payload_len = payload.len;
+        size_t payload_len = payload.len();
 
         switch (L::endianness) {
             case ValidatorConfig::Endianness::BIG: {
@@ -170,14 +170,16 @@ namespace Cloverwatch {
                 log_error("Unexpected endianness value encountered");
         }
 
-        for (size_t i=0; i<payload.len; i++)
+        for (size_t i=0; i<payload.len(); i++)
             packet.push_back(payload[i]);
 
-        size_t temp_len = payload.len;
+        size_t temp_len = payload.len();
 
-        encode_func(WriteVector<Byte>(packet.ptr + packet.len, packet.capacity - packet.len, temp_len));
 
-        packet.len = temp_len + L::header_size + L::length_size;
+
+        encode_func(packet.to_write());
+
+        packet.set_len(temp_len + L::header_size + L::length_size);
 
         for (size_t i=0; i<L::footer_size; i++)
             packet.push_back(L::footer_byte);

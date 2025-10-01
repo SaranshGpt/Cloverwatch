@@ -85,9 +85,9 @@ namespace Cloverwatch {
     // ReSharper disable once CppPassValueParameterByConstReference
     bool CByteQueue_SPSC<capacity>::push(ReadVector<Byte> bytes) {
 
-        if (remaining_capacity() < bytes.len) return false;
+        if (remaining_capacity() < bytes.len()) return false;
 
-        ring_buf_put(&ring_buffer, bytes.data(), bytes.len);
+        ring_buf_put(&ring_buffer, bytes.data(), bytes.len());
 
         return true;
     }
@@ -107,8 +107,7 @@ namespace Cloverwatch {
     template<size_t capacity>
     inline void CByteQueue_SPSC<capacity>::pop(WriteVector<Byte> buffer) {
 
-        buffer.len = ring_buf_get(&ring_buffer, buffer.data(), buffer.capacity);
-
+        buffer.set_len(ring_buf_get(&ring_buffer, buffer.data(), buffer.capacity()));
     }
 
     template <size_t capacity>

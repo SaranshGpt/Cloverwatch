@@ -14,7 +14,7 @@ namespace Cloverwatch::Pattern {
 
         MutexLock lock(packet_mtx);
 
-        uint16_t packet_size = packet.size();
+        uint16_t packet_size = packet.len();
         uint16_t bytes_written = 0;
 
         auto cleanup = [&]() {
@@ -50,26 +50,46 @@ namespace Cloverwatch::Pattern {
     }
 
     template <typename G, typename L>
-    StatResult StatTracker<G, L>::add_pattern(ReadBufferPtr<char> name, ReadVector<Byte> notation) {
+    StatResult StatTracker<G, L>::add_pattern(CopyStr name, ReadVector<Byte> notation) {
 
-        MutexLock lock(pattern_mtx);
-
-        if (patterns.size() == L::max_patterns) return StatResult::INSUFFICIENT_CAPACITY;
-
-        auto pattern_op = compile_pattern(notation);
-
-        if (pattern_op.has_value()) {
-            PatternInfo pattern_info;
-            pattern_info.name = name.ptr;
-            pattern_info.pattern = pattern_op.value();
-
-            patterns.push_back(pattern_info);
-        }
-        else {
-            return StatResult::INVALID_NOTATION;
+        {
+            MutexLock lock(pattern_mtx);
+            for (auto& pattern: patterns) {
+                if (pattern.name == name) {
+                    return StatResult::PATTERN_ALREADY_DEFINED;
+                }
+            }
         }
 
-        return StatResult::OK;
+        const auto compile_res = compile_pattern(notation);
+
+        if (!compile_res.has_value()) return StatResult::INVALID_NOTATION;
+
+        auto pattern = compile_res.value();
+        PatternStr name_cpy = PatternStr::copy_string(name);
+
+        if (name_cpy.capacity() == 0) {
+            pattern.free_memory();
+            return StatResult::INSUFFICIENT_CAPACITY;
+        }
+
+        {
+            MutexLock lock(pattern_mtx);
+            for (auto& pattern_info: patterns) {
+                if (pattern_info.defined == false) {
+                    pattern_info.name = name_cpy;
+                    pattern_info.defined = true;
+                    pattern_info.num_instances = 0;
+                    pattern_info.timestamps.clear();
+                    pattern_info.pattern = pattern;
+                    pattern_info.enabled = true;
+                    return StatResult::OK;
+                }
+            }
+        }
+
+        pattern.free_memory();
+        return StatResult::INSUFFICIENT_CAPACITY;
     }
 
     template <typename G, typename L>
@@ -110,7 +130,7 @@ namespace Cloverwatch::Pattern {
 
         if (state.packet_buffer.size() == state.expected_bytes) {
 
-            MutexLock mtx(this_ptr->packet_mtx);
+            MutexLock mtx(this_ptr->pattern_mtx);
 
             for (auto &pattern: this_ptr->patterns) {
                 if (match_pattern(state.packet_buffer, pattern)) {
@@ -130,10 +150,15 @@ namespace Cloverwatch::Pattern {
 
     template <typename G, typename L>
     void StatTracker<G, L>::start_process() {
+
+        packet_mtx.init();
+        pattern_mtx.init();
+        request_mtx.init();
+
         TaskManager::Task task = {
             .func = packet_process_func,
             .args = this,
-            .priority = TaskManager::Priority::MEDIUM
+            .priority = L::thread::priority
         };
 
         TaskManager::Instance().forever_work_item(task, K_MSEC(1));

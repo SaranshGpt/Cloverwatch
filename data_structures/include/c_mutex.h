@@ -16,12 +16,26 @@ namespace Cloverwatch {
 
     public:
 
-        void init();
+        void init() {
+            k_mutex_init(&mutex);
+        }
 
-        void lock();
-        void unlock();
+        void lock() {
+            k_mutex_lock(&mutex, K_FOREVER);
+        }
+        void unlock() {
+            k_mutex_unlock(&mutex);
+        }
 
-        Mutex();
+        Mutex() = default;
+
+        template<typename T>
+        void execute_function(T func) {
+            lock();
+            func();
+            unlock();
+        }
+
     };
 
     class MutexLock {
@@ -30,7 +44,7 @@ namespace Cloverwatch {
 
     public:
 
-        MutexLock(Mutex& mtx): mtx(mtx) {
+        explicit MutexLock(Mutex& mtx): mtx(mtx) {
             this->mtx = mtx;
             mtx.lock();
         }

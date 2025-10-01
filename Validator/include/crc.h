@@ -23,9 +23,9 @@ namespace Cloverwatch {
 
     static void calculate_crc(ReadVector<Byte> buffer, WriteVector<Byte> crc) {
 
-        const size_t num_bytes = crc.len;
+        const size_t num_bytes = crc.len();
 
-        for (size_t i = 0; i < buffer.len; i++)
+        for (size_t i = 0; i < buffer.len(); i++)
             crc[i%num_bytes] ^= buffer[i];
     }
 
@@ -33,17 +33,17 @@ namespace Cloverwatch {
 
         Byte crc_fill[max_crc_size];
 
-        auto data_partition = buffer.partition(0, buffer.len - num_bytes);
+        auto data_partition = buffer.partition(0, buffer.len() - num_bytes);
         auto crc_buffer = Vector<Byte>(crc_fill, max_crc_size, 0);
 
-        for (size_t i = 0; i < num_bytes; i++) crc_buffer.push_back(buffer[buffer.len - num_bytes + i]);
+        for (size_t i = 0; i < num_bytes; i++) crc_buffer.push_back(buffer[buffer.len() - num_bytes + i]);
 
         calculate_crc(
             data_partition.to_read(),
             crc_buffer.to_write()
             );
 
-        for (size_t i = 0; i < crc_buffer.len; i++)
+        for (size_t i = 0; i < crc_buffer.len(); i++)
             if (crc_fill[i]) return false;
 
         return true;
@@ -52,10 +52,10 @@ namespace Cloverwatch {
     void fill_crc(WriteVector<Byte> buffer, size_t num_bytes) {
 
         for (size_t i=0; i < num_bytes; i++)
-            buffer[buffer.len - num_bytes + i] = 0;
+            buffer[buffer.len() - num_bytes + i] = 0;
 
-        auto data_partition = buffer.partition(0, buffer.len - num_bytes);
-        auto crc_partition = buffer.partition(buffer.len - num_bytes, num_bytes);
+        auto data_partition = buffer.partition(0, buffer.len() - num_bytes);
+        auto crc_partition = buffer.partition(buffer.len() - num_bytes, num_bytes);
 
         calculate_crc(
             data_partition.to_read(),

@@ -12,6 +12,7 @@
 #include "../../data_structures/include/c_heap_vec.h"
 #include "../../data_structures/include/mem_pool.h"
 #include "../../system_config.h"
+#include "../../data_structures/include/c_heap_string.h"
 
 namespace Cloverwatch::Pattern {
 
@@ -19,6 +20,8 @@ namespace Cloverwatch::Pattern {
 
     template <typename T>
     using PatternVec = HeapVector<T, &pattern_heap>;
+
+    using PatternStr = HeapString<&pattern_heap>;
 
     enum class ConditionType {
         FIXED,

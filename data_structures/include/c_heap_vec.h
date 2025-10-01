@@ -8,17 +8,20 @@
 #include "c_types.h"
 #include "mem_pool.h"
 
+#include <cstddef>
+
 namespace Cloverwatch {
     template <typename T, Heap *heap>
-   struct HeapVector: Vector<T> {
-        HeapVector(size_t capacity, size_t len) : Vector<T>(nullptr, capacity, len) {
+    class HeapVector: public Vector<T> {
+    public:
+        explicit HeapVector(size_t capacity, size_t len = 0) : Vector<T>(nullptr, capacity, len) {
             this->ptr = heap->allocate<T>(capacity);
             if (this->ptr == nullptr) {
                 this->len = 0;
                 this->capacity = 0;
             }
         }
-        HeapVector(size_t capacity) : HeapVector(capacity, 0) {}
+        explicit HeapVector(size_t capacity) : HeapVector(capacity, 0) {}
         HeapVector() : Vector<T>(nullptr, 0, 0) {}
 
         bool realloc(size_t new_capacity) {
@@ -29,21 +32,21 @@ namespace Cloverwatch {
             }
 
             if (this->ptr != nullptr) {
-                memcpy(new_ptr, this->ptr, this->len * sizeof(T));
+                memcpy(new_ptr, this->ptr, this->len_ * sizeof(T));
                 heap->free(this->ptr);
             }
 
             this->ptr = new_ptr;
-            this->capacity = new_capacity;
+            this->capacity_ = new_capacity;
 
             return true;
         }
 
         void free() {
-            heap->free(Vector<T>::ptr);
+            heap->free(this->ptr);
             this->ptr = nullptr;
-            this->capacity = 0;
-            this->len = 0;
+            this->capacity_ = 0;
+            this->len_ = 0;
         }
     };
 }

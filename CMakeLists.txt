@@ -8,10 +8,11 @@ add_subdirectory(TaskManager)
 add_subdirectory(Logger)
 add_subdirectory(Validator)
 add_subdirectory(PatternMatcher)
+add_subdirectory(CLI)
 
 target_sources(app PRIVATE main.cpp)
 target_link_libraries(app PRIVATE
-        Serial_IO TaskManager Logger Validator PatternMatcher
+        Serial_IO TaskManager Logger Validator PatternMatcher Cli
 )
 
 execute_process(

@@ -12,6 +12,8 @@ target_sources(
         PatternMatcher PRIVATE
         src/pattern.cpp
         src/pattern_stats.cpp
+        src/cli_funcs.cpp
+        src/stat_request.cpp
         compile_time_init/pattern_template_config.cpp
 )
 

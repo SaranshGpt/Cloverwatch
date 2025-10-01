@@ -29,7 +29,7 @@ namespace Cloverwatch::Pattern {
         size_t start_range = condition.start_range;
         size_t end_range = condition.end_range;
 
-        if (end_range > data.size()) return false;
+        if (end_range > data.len()) return false;
         if (start_range > end_range) return false;
 
         size_t size = end_range - start_range;
@@ -52,7 +52,7 @@ namespace Cloverwatch::Pattern {
         };
 
         auto match_selection = [&]() {
-            for (size_t offset = 0; offset < condition.vals.size(); offset += size) {
+            for (size_t offset = 0; offset < condition.vals.len(); offset += size) {
                 if (match_fixed(offset)) return true;
             }
 
@@ -140,7 +140,7 @@ namespace Cloverwatch::Pattern {
             const auto start_range = get_uint16(notation, curr_ind);
             const auto end_range = get_uint16(notation, curr_ind);
 
-            if (curr_ind >= notation.size()) {
+            if (curr_ind >= notation.len()) {
                 pattern.free_memory();
                 return std::nullopt;
             }
@@ -177,7 +177,7 @@ namespace Cloverwatch::Pattern {
                     break;
             }
 
-            if (curr_ind + vals_size >= notation.size()) {
+            if (curr_ind + vals_size >= notation.len()) {
                 pattern.free_memory();
                 return std::nullopt;
             }

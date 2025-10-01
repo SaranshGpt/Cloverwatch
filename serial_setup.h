@@ -22,6 +22,8 @@
 
 #include "system_config.h"
 
+#include "CLI/include/cli.h"
+
 namespace Cloverwatch {
 
     using Serial_IO_Wire = Serial_DMAasync<GlobalConfig, SerialIOConfig>;
@@ -38,7 +40,7 @@ namespace Cloverwatch {
 
         validator->add_byte(byte, completed_packet);
 
-        if (completed_packet.len > 0) {
+        if (completed_packet.len() > 0) {
             transmit_data.clear();
             validator->construct_packet(completed_packet.to_read(), transmit_data);
         }

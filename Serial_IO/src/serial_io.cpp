@@ -30,16 +30,16 @@ namespace Cloverwatch {
         PacketBuffer packet_buffer;
         PacketBuffer transmit_buffer;
 
-        for (size_t i=0; i<buffer.len; i++) {
+        for (size_t i=0; i<buffer.size(); i++) {
 
             instance.validation_func(buffer[i], user_data, packet_buffer.to_write(), transmit_buffer.to_write());
 
-            if (transmit_buffer.len > 0) {
+            if (transmit_buffer.size() > 0) {
                 transmit(packet_buffer);
                 transmit_buffer.clear();
             }
 
-            if (packet_buffer.len > 0) {
+            if (packet_buffer.size() > 0) {
                 bool res = instance.process_queue.push(std::move(packet_buffer));
                 if (!res) {
                     Logger<ModuleId::SERIAL_IO>::log(ReadPtr<char>("Process queue full"), LogLevel::WARNING);
@@ -132,7 +132,7 @@ namespace Cloverwatch {
     template <typename G, typename L>
     void Serial_DMAasync<G, L>::transmit(PacketBuffer& bytes) {
 
-        int res = uart_tx(L::dev, bytes.buffer.data(), bytes.len, K_NO_WAIT.ticks);
+        int res = uart_tx(L::dev, bytes.data(), bytes.size(), K_NO_WAIT.ticks);
 
         if (res == 0) {
             Logger<ModuleId::SERIAL_IO>::log(ReadPtr<char>("TX Success"), LogLevel::DEBUG);

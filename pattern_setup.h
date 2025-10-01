@@ -25,10 +25,28 @@
 
 namespace Cloverwatch {
 
-    inline void process_func(void* args) {
+    using PatternStats = Pattern::StatTracker<GlobalConfig, PatternConfig>;
 
+    static auto pattern_stats = PatternStats();
 
+    inline void pattern_process_func(void* args) {
+        auto &serial = Serial_IO_Wire::Instance();
 
+        if (auto packet = serial.pop(); packet.has_value()) {
+            pattern_stats.add_packet(packet.value().to_read());
+        }
+    }
+
+    inline void pattern_setup() {
+        pattern_stats.start_process();
+
+        TaskManager::Task task = {
+            .func = pattern_process_func,
+            .args = nullptr,
+            .priority = TaskManager::Priority::MEDIUM
+        };
+
+        TaskManager::Instance().forever_work_item(task, K_MSEC(1));
     }
 
 }

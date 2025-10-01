@@ -4,6 +4,9 @@
 #include "serial_setup.h"
 #include "pattern_setup.h"
 
+#include "CLI/include/cli.h"
+#include "cli_config.h"
+
 namespace Cloverwatch {
 
     [[noreturn]] void start() {
@@ -17,8 +20,6 @@ namespace Cloverwatch {
             k_sleep(K_MSEC(1000));
         }
     }
-
-
 }
 
 extern "C" {

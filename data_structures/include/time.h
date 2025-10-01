@@ -17,6 +17,8 @@ namespace Cloverwatch {
 
     public:
 
+        Time() : _ticks(-1) {}
+
         int64_t ticks() const {return _ticks;}
 
         int64_t milliseconds() const {
