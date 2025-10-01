@@ -14,38 +14,42 @@ The Goal of the project is to create firmware for a device that can be placed on
 - Low latency of the Error correction module
 - Low overhead of the pattern recognition module
 
+## Design
+<img width="3309" height="3840" alt="Untitled diagram _ Mermaid Chart-2025-10-01-124303" src="https://github.com/user-attachments/assets/0835f569-4069-428c-ad54-cb06eb902a17" />
+
+
 ## Design decisions
-- Heavy use of lock-free circular queues rather than heap-allocated linked lists
-- Minimal use of the heap in general
+- Heavy use of lock-free circular queues rather than heap-allocated linked lists for serial processing
 - DMA uart for serial IO (Currently running on Native_sim, so the API runs interrupt-based IO in the background)
 - Interrupt-based UART for CLI interface
 - Extensive use of templates to define compile-time values
+- Use of a variable-sized linked-array-based queue for pattern recognition. Splitting the difference between dynamic flexibility and static performance
 
 ## Progress made
 - Implemented UART API handler for Serial IO
-- Implemented code foundations
+- Added code foundations
   - C++ based wrappers around Zephyr APIs
   - Key data structures
   - Pointer ownership model
-- Implemented High-throughput and Low-latency data pipeline between the UART handler and validation/processing modules
-- Integrated Reed-Soloman implementation into pipeline
+- Implemented a High-throughput and Low-latency data pipeline between the UART handler and validation/processing modules
+- Integrated Reed-Solomon implementation into the pipeline
 - Implemented a packetiser format
+- Developed a Python CLI-based testing suite
+- Implemented pattern recognition notation
+- Tentative CLI skeleton developed
 
 ## Currently working on
-- Testing infrastructure: A Python-based CLI tool to test error correction logic and performance
-  - Completed
-    - Configuration:
-      - Cmake config to copy appropriate source files into the TesterDevice directory. This was to make the tester project more easily extractable into its own project
-      - Pybind11 + clang/Binder config to integrate code with common C/C++ libraries
-    - ClI skeleton
-    - Python-end of packetiser and reed-soloman
-  - In progress
-    - Testing Functions
-    - Serial logic
-    - General refactoring (The overall structure is still flexible)
+- Completed CLI
+  - Current Progress
+    - Completed CLI skeleton
+    - Added functions for pattern recognition
+  - Current work
+    - Code refactoring
+- Integration of Pattern Recognition with DMA pipeline
+- Updating testing suite to test new functionality
 
 ## Next Steps
-1. Support for Viterbi error correction
-2. CLI support
-3. Hardware integration
-4. Support for standard communication protocols
+1. Hardware Integration (Current selection: Arduino nano 33 BLE)
+2. Viterbi Support
+3. Support for standard communication protocols
+4. Work on wireless functionality
