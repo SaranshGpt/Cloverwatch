@@ -10,7 +10,9 @@
 namespace Cloverwatch::Pattern {
 
     template <typename G, typename L>
-    StatResult StatTracker<G, L>::add_packet(ReadVector<Byte> packet) {
+    StatResult StatTracker<G, L>::add_packet(ReadVector<Byte> packet_ref) {
+
+        auto& packet = packet_ref.ref;
 
         MutexLock lock(packet_mtx);
 

@@ -33,9 +33,9 @@ namespace Cloverwatch {
 
         static Serial_DMAasync& Instance() { return instance; }
 
-        using process_func = void (*)(Byte byte, WriteBufferPtr<void> user_data, WriteVector<Byte> transmit_data, WriteVector<Byte> completed_packet);
+        using process_func = void (*)(Byte byte, WriteBufferRef<void> user_data, WriteVector<Byte> transmit_data, WriteVector<Byte> completed_packet);
 
-        void start_process(process_func validation_func, WriteBufferPtr<void> user_data);
+        void start_process(process_func validation_func, WriteBufferRef<void> user_data);
         void stop_process();
 
         std::optional<PacketBuffer> pop();
@@ -48,7 +48,7 @@ namespace Cloverwatch {
         CQueue_concurrent_SPSC<PacketBuffer, L::num_packet_buffers> process_queue;
 
         process_func validation_func = nullptr;
-        WriteBufferPtr<void> user_data = WriteBufferPtr<void>(nullptr);
+        void* user_data = nullptr;
 
         std::array<std::array<uint8_t, L::dma_buffer_size>, 2> buffer_pair;
         bool current_buffer = 0;

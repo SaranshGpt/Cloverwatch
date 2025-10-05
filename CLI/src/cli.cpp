@@ -26,24 +26,24 @@ namespace Cloverwatch::Cli {
     }
 
     template <typename T>
-    bool parse_args(ReadPtr<char> arg, T& val, bool &res) {
+    bool parse_args(ReadRef<char*> arg, T& val, bool &res) {
         if constexpr (std::is_same_v<T, Types::INT> || std::is_same_v<T, Types::FLOAT>) {
-            auto res = std::from_chars(arg.ptr, arg.ptr + strlen(arg.ptr), val);
+            auto res = std::from_chars(arg.ref, arg.ref + strlen(arg.ref), val);
             return res.ec == std::errc();
         }
         else if constexpr (std::is_same_v<T, Types::BOOL>) {
-            if (strcmp(arg.ptr, "true") == 0) val = true;
-            else if (strcmp(arg.ptr, "false") == 0) val = false;
+            if (strcmp(arg.ref, "true") == 0) val = true;
+            else if (strcmp(arg.ref, "false") == 0) val = false;
             else return false;
             return true;
         }
         else if constexpr (std::is_same_v<T, Types::STR>) {
-            val = Types::STR(CopyPtr<char>(arg));
+            val = Types::STR(ToCopy(arg.ref));
             return val.data() != nullptr;
         }
         else if constexpr (std::is_same_v<T, Types::BYTES>) {
 
-            const char* curr_ptr = arg.ptr;
+            const char* curr_ptr = arg.ref;
 
             if (curr_ptr[0] != 0 || curr_ptr[1] != 'x') return false;
 
@@ -70,7 +70,7 @@ namespace Cloverwatch::Cli {
         else return false;
     }
 
-#define PARSE_SPEC(T) template bool parse_args<T>(ReadPtr<char>, T&, bool&);
+#define PARSE_SPEC(T) template bool parse_args<T>(ReadRef<char*>, T&, bool&);
 
     PARSE_SPEC(Types::INT)
     PARSE_SPEC(Types::FLOAT)

@@ -34,25 +34,25 @@ namespace Cloverwatch {
 
     inline MainValidator main_validator;
 
-    inline void validation_func(const Byte byte, WriteBufferPtr<void> user_data, WriteVector<Byte> transmit_data, WriteVector<Byte> completed_packet) {
+    inline void validation_func(const Byte byte, WriteBufferRef<void> user_data, WriteVector<Byte> transmit_data, WriteVector<Byte> completed_packet) {
 
-        const auto validator = static_cast<MainValidator*>(user_data.ptr);
+        const auto validator = static_cast<MainValidator*>(user_data.ref);
 
         validator->add_byte(byte, completed_packet);
 
-        if (completed_packet.len() > 0) {
-            transmit_data.clear();
-            validator->construct_packet(completed_packet.to_read(), transmit_data);
+        if (completed_packet.ref.len() > 0) {
+            transmit_data.ref.clear();
+            validator->construct_packet(ToRead(completed_packet.ref), transmit_data);
         }
     }
 
 
     inline void serial_io_wire_startup() {
 
-        Serial_IO_Wire::Instance().start_process(validation_func, WriteBufferPtr<void>(reinterpret_cast<void *>(&main_validator)));
+        Serial_IO_Wire::Instance().start_process(validation_func, WriteBufferRef<void>((&main_validator)));
 
         if (!device_is_ready(DEVICE_DT_GET(DT_NODELABEL(uart1)))) {
-            Logger<ModuleId::MAIN_THREAD>::log(ReadPtr<char>("UART not ready"), LogLevel::ERROR);
+            Logger<ModuleId::MAIN_THREAD>::log("UART not ready", LogLevel::ERROR);
             exit(1);
             //TODO: Replace exit with better alternative
         }

@@ -36,23 +36,47 @@ namespace Cloverwatch::Pattern {
         PATTERN_NOT_FOUND_IN_RANGE,
     };
 
+    struct StatRequest {
+        String name;
+        size_t num_instances = 0;
+        Vector<Time> timestamps;
+        StatResult result = StatResult::REQUEST_NOT_FULFILLED;
+
+        StatRequest() = default;
+
+        template <Heap* heap>
+        static StatRequest create(CopyStr name, size_t max_timestamps) {
+
+            auto request = StatRequest();
+
+            auto& heap_str = reinterpret_cast<HeapString<heap> &>(request.name);
+            auto& heap_vec = reinterpret_cast<HeapVector<Time, heap> &>(request.timestamps);
+
+            heap_str.copy_string(name);
+            heap_vec.realloc(max_timestamps);
+
+            return request;
+        }
+
+        template <Heap* heap>
+        void free() {
+            auto& heap_str = reinterpret_cast<HeapString<heap> &>(name);
+            auto& heap_vec = reinterpret_cast<HeapVector<Time, heap> &>(timestamps);
+
+            heap_str.free();
+            heap_vec.free();
+        }
+    };
+
     template <typename G, typename L>
     class StatTracker {
-
     public:
-
-        struct StatRequest {
-            BufferReadStr name;
-            size_t num_instances = 0;
-            BufferWriteVector<Time> timestamps;
-            StatResult result = StatResult::REQUEST_NOT_FULFILLED;
-        };
 
         StatResult add_packet(ReadVector<Byte> packet);
 
         StatResult add_pattern(CopyStr name, ReadVector<Byte> notation);
 
-        StatResult add_stat_request(BufferWriteVector<StatRequest> stat_requests);
+        StatResult add_stat_request(WriteBufferVector<StatRequest> stat_requests);
         bool clear_if_stat_request_fulfilled();
 
         StatResult set_pattern_enabled(ReadStr name, bool enabled);
@@ -88,7 +112,7 @@ namespace Cloverwatch::Pattern {
         CLinkedDeque<Byte, &pattern_heap, 128> packet_queue;
         FixedVector<PatternInfo, L::max_patterns> patterns;
 
-        BufferWriteVector<StatRequest> current_request;
+        Vector<StatRequest> *current_request;
 
         Mutex packet_mtx;
         Mutex pattern_mtx;

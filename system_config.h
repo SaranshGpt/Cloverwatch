@@ -9,7 +9,7 @@
 #include "data_structures/include/c_types.h"
 
 #include <zephyr/device.h>
-
+#include <cstddef>
 #include <zephyr/logging/log.h>
 
 #define CONFIG(type) static constexpr const type
@@ -40,6 +40,7 @@ namespace Cloverwatch {
         CONFIG(size_t) max_patterns = 10;
         CONFIG(size_t) heap_size = 20 * 1024;
         CONFIG(size_t) history_length = 10;
+        CONFIG(size_t) max_pattern_name_length = 50;
 
         CONFIG(size_t) max_byte_processed = 50;
 

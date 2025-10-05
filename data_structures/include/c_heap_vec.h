@@ -17,11 +17,10 @@ namespace Cloverwatch {
         explicit HeapVector(size_t capacity, size_t len = 0) : Vector<T>(nullptr, capacity, len) {
             this->ptr = heap->allocate<T>(capacity);
             if (this->ptr == nullptr) {
-                this->len = 0;
-                this->capacity = 0;
+                this->len_ = 0;
+                this->capacity_ = 0;
             }
         }
-        explicit HeapVector(size_t capacity) : HeapVector(capacity, 0) {}
         HeapVector() : Vector<T>(nullptr, 0, 0) {}
 
         bool realloc(size_t new_capacity) {

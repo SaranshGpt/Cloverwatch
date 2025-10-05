@@ -10,77 +10,9 @@
 #include "c_types.h"
 #include "mem_pool.h"
 #include "c_heap_vec.h"
+#include "c_string.h"
 
 namespace Cloverwatch {
-
-    class String;
-
-    template <PtrIntent intent>
-    class IntentString{
-
-        char* ptr;
-        size_t& len_;
-        const size_t capacity_;
-
-    public:
-
-        IntentString(char* ptr, size_t capacity, size_t &len) : ptr(ptr), len_(len), capacity_(capacity) {}
-
-        char& operator[](size_t index) { return ptr[index]; }
-        const char& operator[](size_t index) const { return ptr[index]; }
-        char* data() { return ptr; }
-        const char* data() const { return ptr; }
-        char* begin() { return ptr; }
-        const char* begin() const { return ptr; }
-        [[nodiscard]] const char* end() const {return ptr + len_ - 1;}
-        [[nodiscard]] char* end() {return ptr + len_ - 1;}
-        bool empty() const { return len_ <= 1;}
-        size_t capacity() const { return capacity_ - 1; }
-        size_t len() const { return len_ - 1; }
-
-        void push_back(const char val) {
-            ptr[len_-1] = val;
-            ptr[len_] = 0;
-            len_++;
-        }
-
-        void pop_back() {
-            len_--;
-            ptr[len_] = 0;
-        }
-
-        void clear() {
-            len_ = 1;
-            ptr[0] = 0;
-        }
-
-        char& back() {
-            return ptr[len_-2];
-        }
-
-        void set_len(size_t new_len) { len_ = new_len; }
-
-        constexpr IntentString<PtrIntent::READONLY> to_read() {
-            return IntentString<PtrIntent::READONLY>(ptr, capacity_, len_);
-        }
-
-        constexpr IntentString<PtrIntent::READWRITE> to_write() {
-            return IntentString<PtrIntent::READWRITE>(ptr, capacity_, len_);
-        }
-
-        constexpr IntentString<PtrIntent::BUFFER_READONLY> to_buffer_read() {
-            return IntentString<PtrIntent::BUFFER_READONLY>(ptr, capacity_, len_);
-        }
-
-        constexpr IntentString<PtrIntent::BUFFER_READWRITE> to_buffer_write() {
-            return IntentString<PtrIntent::BUFFER_READWRITE>(ptr, capacity_, len_);
-        }
-
-        constexpr IntentString<PtrIntent::COPY_CONTENTS> to_copy() {
-            return IntentString<PtrIntent::COPY_CONTENTS>(ptr, capacity_, len_);
-        }
-
-    };
 
     class String {
     protected:
@@ -120,6 +52,16 @@ namespace Cloverwatch {
             return ptr[len_-2];
         }
 
+        void set_len(size_t len) {
+            len_ = len;
+            ptr[len_] = 0;
+        }
+
+        void clear() {
+            len_ = 0;
+            ptr[0] = 0;
+        }
+
         bool operator==(const String& other) const {
 
             if (len_ != other.len_) {
@@ -134,11 +76,26 @@ namespace Cloverwatch {
         }
     };
 
-    using ReadStr = const IntentString<PtrIntent::READONLY>;
-    using WriteStr = IntentString<PtrIntent::READWRITE>;
-    using BufferReadStr = const IntentString<PtrIntent::BUFFER_READONLY>;
-    using BufferWriteStr = IntentString<PtrIntent::BUFFER_READWRITE>;
-    using CopyStr = const IntentString<PtrIntent::COPY_CONTENTS>;
+    using ReadStr = ReadRef<String>;
+    using WriteStr = WriteRef<String>;
+    using ReadBufferStr = ReadBufferRef<String>;
+    using WriteBufferStr = WriteBufferRef<String>;
+    using CopyStr = CopyRef<String>;
+
+    template <size_t buffer_size>
+    class FixedStr: public String {
+
+        char buffer[buffer_size];
+
+    public:
+
+        FixedStr(): String(buffer, buffer_size, 0) {}
+
+        String& as_str() {
+            return *this;
+        }
+        
+    };
 
 }
 

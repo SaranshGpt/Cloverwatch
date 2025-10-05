@@ -15,16 +15,19 @@ namespace Cloverwatch::Pattern {
 
     static uint16_t get_uint16(ReadVector<Byte> data, size_t &offset) {
 
-        uint16_t value = data[offset];
+        uint16_t value = data.ref[offset];
         value<<=8;
-        value |= data[offset + 1];
+        value |= data.ref[offset + 1];
 
         offset+=2;
 
         return value;
     }
 
-    static bool evaluate_condition(ReadVector<Byte> data, const Condition& condition) {
+    static bool evaluate_condition(ReadVector<Byte> data_ref, ReadRef<Condition> condition_ref) {
+
+        auto& data = data_ref.ref;
+        auto& condition = condition_ref.ref;
 
         size_t start_range = condition.start_range;
         size_t end_range = condition.end_range;
@@ -78,7 +81,9 @@ namespace Cloverwatch::Pattern {
 
     }
 
-    bool match_pattern(ReadVector<Byte> data, Pattern& pattern) {
+    bool match_pattern(ReadVector<Byte> data_ref, Pattern& pattern) {
+
+        auto &data = data_ref.ref;
 
         FixedVector<bool, PatternConfig::max_stack_size> stack;
 
@@ -87,7 +92,7 @@ namespace Cloverwatch::Pattern {
         for (const auto op: pattern.operations) {
 
             if (op == OperationType::PUSH) {
-                stack.push_back(evaluate_condition(data, pattern.conditions[cond_index++]));
+                stack.push_back(evaluate_condition(data_ref, ToRead(pattern.conditions[cond_index++])));
                 continue;
             }
 
@@ -122,13 +127,15 @@ namespace Cloverwatch::Pattern {
 
     }
 
-    std::optional<Pattern> compile_pattern(ReadVector<Byte> notation) {
+    std::optional<Pattern> compile_pattern(ReadVector<Byte> notation_ref) {
+
+        auto& notation = notation_ref.ref;
 
         Pattern pattern;
 
         size_t curr_ind = 0;
 
-        const auto num_conds = get_uint16(notation, curr_ind);
+        const auto num_conds = get_uint16(ToRead(notation), curr_ind);
 
         if (num_conds < 0) return std::nullopt;
 
@@ -137,8 +144,8 @@ namespace Cloverwatch::Pattern {
         for (int i=0; i<num_conds; i++) {
             const auto cond_type = static_cast<ConditionType>(notation[curr_ind++]);
 
-            const auto start_range = get_uint16(notation, curr_ind);
-            const auto end_range = get_uint16(notation, curr_ind);
+            const auto start_range = get_uint16(ToRead(notation), curr_ind);
+            const auto end_range = get_uint16(ToRead(notation), curr_ind);
 
             if (curr_ind >= notation.len()) {
                 pattern.free_memory();
@@ -161,7 +168,7 @@ namespace Cloverwatch::Pattern {
                     vals_size *= 2;
                     break;
                 case ConditionType::SELECTION: {
-                    const auto num_vals = get_uint16(notation, curr_ind);
+                    const auto num_vals = get_uint16(ToRead(notation), curr_ind);
                     vals_size *= num_vals;
                     break;
                 }
@@ -169,7 +176,7 @@ namespace Cloverwatch::Pattern {
                     vals_size *= 2;
                     break;
                 case ConditionType::NSELECTION: {
-                    const auto num_vals = get_uint16(notation, curr_ind);
+                    const auto num_vals = get_uint16(ToRead(notation), curr_ind);
                     vals_size *= num_vals;
                     break;
                 }
@@ -190,7 +197,7 @@ namespace Cloverwatch::Pattern {
 
         }
 
-        const auto num_operands = get_uint16(notation, curr_ind);
+        const auto num_operands = get_uint16(ToRead(notation), curr_ind);
 
         pattern.operations.realloc(num_operands);
 
@@ -206,7 +213,7 @@ namespace Cloverwatch::Pattern {
                 stack_size--;
 
             if (stack_size <= 0) {
-                Logger<ModuleId::PATTERN_MATCHER>::log(ReadPtr<char>("Invalid Notation Recieved"));
+                Logger<ModuleId::PATTERN_MATCHER>::log("Invalid Notation Recieved");
                 pattern.free_memory();
                 return std::nullopt;
             }

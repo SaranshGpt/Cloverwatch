@@ -20,7 +20,7 @@ namespace Cloverwatch {
 
     static void log_error(const char *msg) {
 #ifndef VALIDATOR_LOG_SKIP
-        Logger<ModuleId::VALIDATION_MODULE>::log(ReadPtr<char>(msg), LogLevel::ERROR);
+        Logger<ModuleId::VALIDATION_MODULE>::log(msg, LogLevel::ERROR);
 #endif
     };
 
@@ -127,15 +127,15 @@ namespace Cloverwatch {
                     bool valid;
 
                     if constexpr (decode_func != nullptr)
-                        valid = decode_func(buffer.to_write());
+                        valid = decode_func(ToWrite(buffer.as_vec()));
                     else
                         valid = true;
 
                     if (valid) {
-                        for (size_t i = 0; i < buffer.size(); i++) {
-                            message_tx[i] = buffer[i];
+                        for (size_t i = 0; i < buffer.len(); i++) {
+                            message_tx.ref[i] = buffer[i];
                         }
-                        message_tx.set_len(buffer.size());
+                        message_tx.ref.set_len(buffer.len());
                     } else {
                         log_error("Validation failed. Discarding packet");
                     }
@@ -151,38 +151,38 @@ namespace Cloverwatch {
     void SimplePacketiser_Block<G, L, encode_func, decode_func>::construct_packet(
         ReadVector<Byte> payload, WriteVector<Byte> packet) const {
         for (size_t i = 0; i < L::header_size; i++)
-            packet.push_back(L::header_byte);
+            packet.ref.push_back(L::header_byte);
 
-        size_t payload_len = payload.len();
+        size_t payload_len = payload.ref.len();
 
         switch (L::endianness) {
             case ValidatorConfig::Endianness::BIG: {
                 for (size_t i=0; i<L::length_size; i++)
-                    packet.push_back(static_cast<Byte>(payload_len >> (8 * (L::length_size - i - 1))));
+                    packet.ref.push_back(static_cast<Byte>(payload_len >> (8 * (L::length_size - i - 1))));
                 break;
             }
             case ValidatorConfig::Endianness::LITTLE: {
                 for (size_t i=0; i<L::length_size; i++)
-                    packet.push_back(static_cast<Byte>(payload_len >> (8 * i)));
+                    packet.ref.push_back(static_cast<Byte>(payload_len >> (8 * i)));
                 break;
             }
             default:
                 log_error("Unexpected endianness value encountered");
         }
 
-        for (size_t i=0; i<payload.len(); i++)
-            packet.push_back(payload[i]);
+        for (size_t i=0; i<payload.ref.len(); i++)
+            packet.ref.push_back(payload.ref[i]);
 
-        size_t temp_len = payload.len();
+        size_t temp_len = payload.ref.len();
 
 
 
-        encode_func(packet.to_write());
+        encode_func(packet);
 
-        packet.set_len(temp_len + L::header_size + L::length_size);
+        packet.ref.set_len(temp_len + L::header_size + L::length_size);
 
         for (size_t i=0; i<L::footer_size; i++)
-            packet.push_back(L::footer_byte);
+            packet.ref.push_back(L::footer_byte);
 
     }
 

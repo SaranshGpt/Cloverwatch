@@ -18,9 +18,9 @@ namespace Cloverwatch {
 
         HeapString(): String() {}
 
-        explicit HeapString(CopyPtr<char> str, size_t excess_capacity = 0) {
+        explicit HeapString(CopyRef<char*> str, const size_t excess_capacity = 0) {
 
-            len_ = strlen(str.ptr) + 1;
+            len_ = strlen(str.ref) + 1;
             capacity_ = len_ + excess_capacity;
 
             ptr = heap->allocate<char>(capacity_);
@@ -31,21 +31,21 @@ namespace Cloverwatch {
                 return;
             }
 
-            bytecpy(ptr, str.ptr, len_);
+            bytecpy(ptr, str.ref, len_);
         }
 
-        static HeapString<heap> copy_string(CopyStr str) {
+        static HeapString<heap> copy_string(CopyRef<String> str) {
             auto heap_str = HeapString();
-            heap_str.ptr = heap->allocate<char>(str.capacity());
+            heap_str.ptr = heap->allocate<char>(str.ref.capacity());
 
             if (heap_str.ptr == nullptr) {
                 return HeapString();
             }
 
-            bytecpy(heap_str.begin(), str.begin(), str.len());
+            bytecpy(heap_str.begin(), str.ref.begin(), str.ref.len());
 
-            heap_str.len_ = str.len();
-            heap_str.capacity_ = str.capacity();
+            heap_str.len_ = str.ref.len();
+            heap_str.capacity_ = str.ref.capacity();
 
             return heap_str;
         }

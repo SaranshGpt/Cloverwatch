@@ -7,13 +7,13 @@
 namespace Cloverwatch::Pattern {
 
     template <typename G, typename L>
-    StatResult StatTracker<G, L>::add_stat_request(BufferWriteVector<StatRequest> stat_requests) {
+    StatResult StatTracker<G, L>::add_stat_request(WriteBufferVector<StatRequest> stat_requests) {
 
         auto lock = MutexLock(request_mtx);
 
-        if (current_request.is_valid()) return StatResult::REQUEST_ALREADY_EXISTS;
+        if (current_request) return StatResult::REQUEST_ALREADY_EXISTS;
 
-        current_request = stat_requests;
+        current_request = &stat_requests.ref;
         return StatResult::OK;
     }
 
@@ -21,13 +21,13 @@ namespace Cloverwatch::Pattern {
     bool StatTracker<G, L>::clear_if_stat_request_fulfilled() {
         auto lock = MutexLock(request_mtx);
 
-        for (auto& request: current_request) {
+        for (auto& request: *current_request) {
             if (request.result == StatResult::REQUEST_NOT_FULFILLED) {
                 return false;
             }
         }
 
-        current_request.invalidate();
+        current_request = nullptr;
 
         return true;
     }

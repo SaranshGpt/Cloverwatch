@@ -34,7 +34,7 @@ namespace Cloverwatch::Cli {
     using Shell = const shell*;
 
     template <typename T>
-    bool parse_args(ReadPtr<char> arg, T& val, bool &res);
+    bool parse_args(ReadRef<char*> arg, T& val, bool &res);
 
     template <typename T>
     struct CommandArgs;
@@ -50,7 +50,7 @@ namespace Cloverwatch::Cli {
             auto curr_arg = argv;
             bool res = true;
 
-            (parse_args(ReadPtr<char>(*(curr_arg++)), std::get<Args>(args), res) && ...);
+            (parse_args(ReadRef<char*>(*(curr_arg++)), std::get<Args>(args), res) && ...);
 
             return res;
         }

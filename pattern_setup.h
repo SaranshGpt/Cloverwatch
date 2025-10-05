@@ -33,7 +33,7 @@ namespace Cloverwatch {
         auto &serial = Serial_IO_Wire::Instance();
 
         if (auto packet = serial.pop(); packet.has_value()) {
-            pattern_stats.add_packet(packet.value().to_read());
+            pattern_stats.add_packet(ToRead(packet.value().as_vec()));
         }
     }
 

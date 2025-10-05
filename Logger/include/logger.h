@@ -36,23 +36,23 @@ namespace Cloverwatch {
 
     public:
 
-        static void log(ReadPtr<char> message, LogLevel level = LogLevel::INFO) {
+        static void log(const char* message, LogLevel level = LogLevel::INFO) {
 
             switch (level) {
                 case LogLevel::INFO:
-                    LOG_INF("%s%s%s", ModuleId_to_string<module>(), ": ", message.ptr);
+                    LOG_INF("%s%s%s", ModuleId_to_string<module>(), ": ", message);
                     break;
                 case LogLevel::DEBUG:
-                    LOG_DBG("%s%s%s", ModuleId_to_string<module>(), ": ", message.ptr);
+                    LOG_DBG("%s%s%s", ModuleId_to_string<module>(), ": ", message);
                     break;
                 case LogLevel::WARNING:
-                    LOG_WRN("%s%s%s", ModuleId_to_string<module>(), ": ", message.ptr);
+                    LOG_WRN("%s%s%s", ModuleId_to_string<module>(), ": ", message);
                     break;
                 case LogLevel::ERROR:
-                    LOG_ERR("%s%s%s", ModuleId_to_string<module>(), ": ", message.ptr);
+                    LOG_ERR("%s%s%s", ModuleId_to_string<module>(), ": ", message);
                     break;
                 default:
-                    log(ReadPtr<char>("Invalid log level"), LogLevel::WARNING);
+                    log("Invalid log level", LogLevel::WARNING);
             }
         }
 

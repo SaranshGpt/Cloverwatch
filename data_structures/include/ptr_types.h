@@ -9,7 +9,7 @@
 
 namespace Cloverwatch {
 
-    enum class PtrIntent {
+    enum class RefIntent {
 
         // The memory value at the location may be read from for the duration of the function scope
         READONLY,
@@ -30,43 +30,99 @@ namespace Cloverwatch {
         COPY_CONTENTS
     };
 
-    template <PtrIntent intent, typename T>
-    class IntentPtr {
+    template <RefIntent intent, typename T>
+    class IntentRef {
     public:
-        T *ptr;
+        T& ref;
 
-        constexpr explicit IntentPtr(T* ptr) : ptr(ptr) {}
+        constexpr explicit IntentRef(T &ptr) : ref(ptr) {}
 
-        template <PtrIntent intent_other>
-        constexpr explicit IntentPtr(IntentPtr<intent_other, T> other) : ptr(other.ptr) {}
+        template <RefIntent intent_other>
+        constexpr explicit IntentRef(IntentRef<intent_other, T> other) : ref(other.ref) {}
 
-        template <typename U = T>
-        constexpr typename std::enable_if<!std::is_void<U>::value, U&>::type operator*() const { return *ptr; }
-        constexpr T* operator->() const { return ptr; }
-		constexpr bool operator==(const IntentPtr& other) const { return ptr == other.ptr; }
-		constexpr bool operator!=(const IntentPtr& other) const { return ptr != other.ptr; }
-
-        constexpr bool operator==(const T* other_ptr) const { return ptr == other_ptr; }
-        constexpr bool operator!=(const T* other_ptr) const { return ptr != other_ptr; }
+        constexpr T& operator->() const {return ref; }
+        constexpr T& operator*() const {return ref; }
     };
 
-    template <typename T>
-    using ReadPtr = IntentPtr<PtrIntent::READONLY, const T>;
+    template <RefIntent intent>
+    class IntentRef<intent, void> {
+    public:
+        void* ref;
+
+        constexpr explicit IntentRef(void* ptr) : ref(ptr) {}
+
+        template <RefIntent intent_other>
+        constexpr explicit IntentRef(IntentRef<intent_other, void> other) : ref(other.ref) {}
+    };
+
 
     template <typename T>
-    using WritePtr = IntentPtr<PtrIntent::READWRITE, T>;
+    using ReadRef = IntentRef<RefIntent::READONLY, const T>;
 
     template <typename T>
-    using ReadBufferPtr = IntentPtr<PtrIntent::BUFFER_READONLY, const T>;
+    using WriteRef = IntentRef<RefIntent::READWRITE, T>;
 
     template <typename T>
-    using WriteBufferPtr = IntentPtr<PtrIntent::BUFFER_READWRITE, T>;
+    using ReadBufferRef = IntentRef<RefIntent::BUFFER_READONLY, const T>;
 
     template <typename T>
-    using MovePtr = IntentPtr<PtrIntent::MOVE_OWNERSHIP, T>;
+    using WriteBufferRef = IntentRef<RefIntent::BUFFER_READWRITE, T>;
 
     template <typename T>
-    using CopyPtr = IntentPtr<PtrIntent::COPY_CONTENTS, const T>;
+    using MoveRef = IntentRef<RefIntent::MOVE_OWNERSHIP, T>;
+
+    template <typename T>
+    using CopyRef = IntentRef<RefIntent::COPY_CONTENTS, const T>;
+
+    template <typename T>
+    constexpr ReadRef<T> ToRead(T& ref) {
+        return ReadRef<T>(ref);
+    }
+
+    template <typename T>
+    constexpr WriteRef<T> ToWrite(T& ref) {
+        return WriteRef<T>(ref);
+    }
+
+    template <typename T>
+    constexpr ReadBufferRef<T> ToReadBuffer(T& ref) {
+        return ReadBufferRef<T>(ref);
+    }
+
+    template <typename T>
+    constexpr WriteBufferRef<T> ToWriteBuffer(T& ref) {
+        return WriteBufferRef<T>(ref);
+    }
+
+    template <typename T>
+    constexpr CopyRef<T> ToCopy(T& ref) {
+        return CopyRef<T>(ref);
+    }
+
+    template <typename T>
+    constexpr ReadRef<T> ToRead(const T& ref) {
+        return ReadRef<T>(ref);
+    }
+
+    template <typename T>
+    constexpr WriteRef<T> ToWrite(const T& ref) {
+        return WriteRef<T>(ref);
+    }
+
+    template <typename T>
+    constexpr ReadBufferRef<T> ToReadBuffer(const T& ref) {
+        return ReadBufferRef<T>(ref);
+    }
+
+    template <typename T>
+    constexpr WriteBufferRef<T> ToWriteBuffer(const T& ref) {
+        return WriteBufferRef<T>(ref);
+    }
+
+    template <typename T>
+    constexpr CopyRef<T> ToCopy(const T& ref) {
+        return CopyRef<T>(ref);
+    }
 
 };
 
