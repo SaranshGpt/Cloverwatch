@@ -11,7 +11,7 @@
 
 namespace Cloverwatch::Pattern {
 
-	using Stats = StatTracker<GlobalConfig, ValidatorConfig>;
+	using Stats = StatTracker<GlobalConfig, PrimaryPatternConfig>;
 
 	Cli::CommandRes display_stats(Cli::Shell sh, Cli::Types::STR names);
 

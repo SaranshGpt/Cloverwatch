@@ -5,14 +5,17 @@
 #ifndef SYSTEM_CONFIG_H
 #define SYSTEM_CONFIG_H
 
-#include "TaskManager/include/task_manager.h"
-#include "data_structures/include/c_types.h"
+#include "../TaskManager/include/task_manager.h"
+#include "../data_structures/include/c_types.h"
+#include "../PatternMatcher/include/pattern_stats.h"
+#include "../Serial_IO/include/serial_io.h"
 
 #include <zephyr/device.h>
 #include <cstddef>
 #include <zephyr/logging/log.h>
 
 #define CONFIG(type) static constexpr const type
+#define OBJECT(type) static constexpr type
 
 namespace Cloverwatch {
 
@@ -35,7 +38,7 @@ namespace Cloverwatch {
         CONFIG(ThreadConfig) thread = {TaskManager::Priority::URGENT};
     };
 
-    struct PatternConfig {
+    struct PrimaryPatternConfig {
         CONFIG(size_t) max_stack_size = 20;
         CONFIG(size_t) max_patterns = 10;
         CONFIG(size_t) heap_size = 20 * 1024;
@@ -72,6 +75,10 @@ namespace Cloverwatch {
             CONFIG(uint8_t) chunk_size = 127;
             CONFIG(uint8_t) max_symbols = 4;
         };
+    };
+
+    struct Objects {
+        static Pattern::StatTracker<GlobalConfig, PrimaryPatternConfig> primary_stats;
     };
 
 }

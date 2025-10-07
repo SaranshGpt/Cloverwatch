@@ -19,33 +19,41 @@ namespace Cloverwatch {
 
         Time() : _ticks(-1) {}
 
-        int64_t ticks() const {return _ticks;}
+        [[nodiscard]] int64_t ticks() const {return _ticks;}
 
-        int64_t milliseconds() const {
+        [[nodiscard]] int64_t milliseconds() const {
             return _ticks / CONFIG_SYS_CLOCK_TICKS_PER_SEC * 1000;
         }
 
-        int64_t seconds() const {
+        [[nodiscard]] int64_t seconds() const {
             return _ticks / CONFIG_SYS_CLOCK_TICKS_PER_SEC;
         }
 
         static Time UpTime() {
-            return Time(k_uptime_ticks());
+            return {k_uptime_ticks()};
         }
 
         static Time FromTicks(int64_t ticks) {
-            return Time(ticks);
+            return {ticks};
         }
 
         static Time FromSeconds(int64_t seconds) {
-            return Time(seconds * CONFIG_SYS_CLOCK_TICKS_PER_SEC);
+            return {seconds * CONFIG_SYS_CLOCK_TICKS_PER_SEC};
         }
 
         static Time FromMilliseconds(int64_t milliseconds) {
-            return Time(milliseconds * CONFIG_SYS_CLOCK_TICKS_PER_SEC / 1000);
+            return {milliseconds * CONFIG_SYS_CLOCK_TICKS_PER_SEC / 1000};
         }
 
     };
+
+    inline void sleep(const Time duration) {
+        k_sleep({duration.ticks()});
+    }
+
+    inline void usleep(const Time duration) {
+        k_usleep(duration.ticks());
+    }
 
 }
 

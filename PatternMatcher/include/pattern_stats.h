@@ -25,15 +25,10 @@ namespace Cloverwatch::Pattern {
         REQUEST_ALREADY_EXISTS,
         REQUEST_NOT_FULFILLED,
         REQUEST_DOES_NOT_EXIST,
-        PATTERN_DOES_NOT_EXIST,
-        PATTERN_ALREADY_EXISTS,
         PATTERN_NOT_ENABLED,
         PATTERN_ALREADY_ENABLED,
         PATTERN_NOT_DEFINED,
         PATTERN_ALREADY_DEFINED,
-        PATTERN_NOT_FOUND,
-        PATTERN_FOUND,
-        PATTERN_NOT_FOUND_IN_RANGE,
     };
 
     struct StatRequest {
@@ -83,7 +78,7 @@ namespace Cloverwatch::Pattern {
 
         void start_process();
 
-        StatTracker() = default;
+        StatTracker()=default;
 
     private:
 
@@ -112,7 +107,7 @@ namespace Cloverwatch::Pattern {
         CLinkedDeque<Byte, &pattern_heap, 128> packet_queue;
         FixedVector<PatternInfo, L::max_patterns> patterns;
 
-        Vector<StatRequest> *current_request;
+        Vector<StatRequest> *current_request = nullptr;
 
         Mutex packet_mtx;
         Mutex pattern_mtx;

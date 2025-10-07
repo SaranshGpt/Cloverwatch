@@ -11,7 +11,7 @@
 
 namespace Cloverwatch::Pattern {
 
-    DEFINE_HEAP(pattern_heap, PatternConfig::heap_size);
+    DEFINE_HEAP(pattern_heap, PrimaryPatternConfig::heap_size);
 
     static uint16_t get_uint16(ReadVector<Byte> data, size_t &offset) {
 
@@ -85,7 +85,7 @@ namespace Cloverwatch::Pattern {
 
         auto &data = data_ref.ref;
 
-        FixedVector<bool, PatternConfig::max_stack_size> stack;
+        FixedVector<bool, PrimaryPatternConfig::max_stack_size> stack;
 
         size_t cond_index = 0;
 

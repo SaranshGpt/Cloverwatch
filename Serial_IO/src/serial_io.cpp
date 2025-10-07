@@ -9,7 +9,7 @@
 #include "serial_io.h"
 
 #include "task_manager.h"
-#include "../../system_config.h"
+#include "../../Config/system_config.h"
 
 namespace Cloverwatch {
 

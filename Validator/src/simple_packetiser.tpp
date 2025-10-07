@@ -12,7 +12,7 @@
 #include <logger.h>
 #endif
 
-#include "../../system_config.h"
+#include "../../Config/system_config.h"
 
 #include "../../data_structures/include/ptr_types.h"
 

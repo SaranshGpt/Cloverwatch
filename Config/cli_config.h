@@ -8,7 +8,7 @@
 #include <zephyr/shell/shell.h>
 
 #include "../../CLI/include/cli.h"
-#include "PatternMatcher/include/cli_funcs.h"
+#include "../PatternMatcher/include/cli_funcs.h"
 
 namespace Cloverwatch::Cli {
 

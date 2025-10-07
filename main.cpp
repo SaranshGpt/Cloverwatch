@@ -5,7 +5,7 @@
 #include "pattern_setup.h"
 
 #include "CLI/include/cli.h"
-#include "cli_config.h"
+#include "Config/cli_config.h"
 
 namespace Cloverwatch {
 

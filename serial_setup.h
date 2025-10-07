@@ -20,13 +20,11 @@
 #include "PatternMatcher/include/pattern.h"
 #include "PatternMatcher/include/pattern_stats.h"
 
-#include "system_config.h"
+#include "Config/system_config.h"
 
 #include "CLI/include/cli.h"
 
 namespace Cloverwatch {
-
-    using Serial_IO_Wire = Serial_DMAasync<GlobalConfig, SerialIOConfig>;
 
     using RS_Funcs = RS_Validator<ValidatorConfig::RS::chunk_size, ValidatorConfig::RS::max_symbols>;
 
@@ -49,7 +47,7 @@ namespace Cloverwatch {
 
     inline void serial_io_wire_startup() {
 
-        Serial_IO_Wire::Instance().start_process(validation_func, WriteBufferRef<void>((&main_validator)));
+        Objects::Serial_IO_Wire::Instance().start_process(validation_func, WriteBufferRef<void>((&main_validator)));
 
         if (!device_is_ready(DEVICE_DT_GET(DT_NODELABEL(uart1)))) {
             Logger<ModuleId::MAIN_THREAD>::log("UART not ready", LogLevel::ERROR);

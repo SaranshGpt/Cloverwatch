@@ -31,8 +31,6 @@ namespace Cloverwatch::Cli {
         using BOOL = bool;
     }
 
-    using Shell = const shell*;
-
     template <typename T>
     bool parse_args(ReadRef<char*> arg, T& val, bool &res);
 
@@ -56,8 +54,27 @@ namespace Cloverwatch::Cli {
         }
     };
 
+    class Shell {
+        const shell* sh;
+    public:
+
+        enum class Level {
+            NORMAL = SHELL_NORMAL,
+            INFO = SHELL_INFO,
+            WARN = SHELL_WARNING,
+            ERROR = SHELL_ERROR
+        };
+
+        explicit Shell(const shell* sh): sh(sh) {}
+
+        template <Level level = Level::NORMAL, typename... Args>
+        [[gnu::always_inline]] inline void print(const char* fmt, Args... args) {
+            shell_fprintf(sh, static_cast<enum shell_vt100_color>(level), fmt, args...);
+        }
+    };
+
     template <auto Func>
-    int func_handler(Shell sh, size_t argc, char** argv) {
+    int func_handler(const shell* sh, size_t argc, char** argv) {
 
         using CommandArgs = CommandArgs<decltype(Func)>;
         using ArgsTuple = typename CommandArgs::ArgsTuple;
@@ -69,7 +86,7 @@ namespace Cloverwatch::Cli {
         if (!CommandArgs::fill_args(args, argc, argv)) return static_cast<int>(CommandRes::ARGERROR);
 
         auto res = std::apply([&sh](auto&&... tp_args) {
-            return Func(sh, std::forward<decltype(tp_args)>(tp_args)...);
+            return Func(Shell(sh), std::forward<decltype(tp_args)>(tp_args)...);
         }, args);
 
         return static_cast<int>(res);
