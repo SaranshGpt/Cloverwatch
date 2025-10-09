@@ -64,7 +64,7 @@ namespace Cloverwatch::Pattern {
 
         auto& primary_stats = Objects::primary_stats;
 
-        primary_stats.add_stat_request(ToWriteBuffer(requests));
+        primary_stats.add_stat_request(ToWriteBuffer(requests.as_vec()));
 
         while (!primary_stats.clear_if_stat_request_fulfilled()) {
             sleep(Time::FromMilliseconds(100));
@@ -112,7 +112,7 @@ namespace Cloverwatch::Pattern {
 
         auto& primary_stats = Objects::primary_stats;
 
-        auto res = primary_stats.add_pattern(ToCopy(name), ToRead(notation));
+        auto res = primary_stats.add_pattern(ToCopy(name.as_str()), ToRead(notation.as_vec()));
 
         using Level = Cli::Shell::Level;
 
@@ -143,7 +143,7 @@ namespace Cloverwatch::Pattern {
     Cli::CommandRes enable_pattern(Cli::Shell sh, Cli::Types::STR name) {
         auto& primary_stats = Objects::primary_stats;
 
-        auto res = primary_stats.set_pattern_enabled(ToRead(name), true);
+        auto res = primary_stats.set_pattern_enabled(ToRead(name.as_str()), true);
 
         switch (res) {
             case StatResult::OK:
@@ -169,7 +169,7 @@ namespace Cloverwatch::Pattern {
     Cli::CommandRes disable_pattern(Cli::Shell sh, Cli::Types::STR name) {
         auto& primary_stats = Objects::primary_stats;
 
-        auto res = primary_stats.set_pattern_enabled(ToRead(name), false);
+        auto res = primary_stats.set_pattern_enabled(ToRead(name.as_str()), false);
 
         switch (res) {
             case StatResult::OK:

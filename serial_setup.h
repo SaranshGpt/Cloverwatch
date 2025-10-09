@@ -50,7 +50,7 @@ namespace Cloverwatch {
         Objects::Serial_IO_Wire::Instance().start_process(validation_func, WriteBufferRef<void>((&main_validator)));
 
         if (!device_is_ready(DEVICE_DT_GET(DT_NODELABEL(uart1)))) {
-            Logger<ModuleId::MAIN_THREAD>::log("UART not ready", LogLevel::ERROR);
+            Objects::logger.log("UART not ready", ModuleId::MAIN_THREAD, LogLevel::ERROR);
             exit(1);
             //TODO: Replace exit with better alternative
         }

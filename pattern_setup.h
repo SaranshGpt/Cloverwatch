@@ -17,16 +17,18 @@
 namespace Cloverwatch {
 
     inline void pattern_process_func(void* args) {
-        auto &serial = Serial_IO_Wire::Instance();
+        auto &serial = Objects::Serial_IO_Wire::Instance();
 
         if (auto packet = serial.pop(); packet.has_value()) {
-            PrimaryPatternConfig::object.add_packet(ToRead(packet.value().as_vec()));
+
+            auto& val = packet.value().as_vec();
+
+            Objects::primary_stats.add_packet(ToRead(val));
+
         }
     }
 
     inline void pattern_setup() {
-
-        PrimaryPatternConfig::object.start_process();
 
         TaskManager::Task task = {
             .func = pattern_process_func,

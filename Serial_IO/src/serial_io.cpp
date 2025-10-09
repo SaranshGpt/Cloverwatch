@@ -41,7 +41,7 @@ namespace Cloverwatch {
             if (packet_buffer.len() > 0) {
                 bool res = instance.process_queue.push(std::move(packet_buffer));
                 if (!res) {
-                    Logger<ModuleId::SERIAL_IO>::log("Process queue full", LogLevel::WARNING);
+                    Objects::logger.log("Process queue full", ModuleId::SERIAL_IO, LogLevel::WARNING);
                 }
                 packet_buffer.clear();
             }
@@ -58,11 +58,11 @@ namespace Cloverwatch {
 
         switch (evt->type) {
             case UART_TX_DONE: {
-                Logger<ModuleId::SERIAL_IO>::log("TX Done", LogLevel::DEBUG);
+                Objects::logger.log("TX Done", ModuleId::SERIAL_IO, LogLevel::DEBUG);
                 break;
             }
             case UART_TX_ABORTED: {
-                Logger<ModuleId::SERIAL_IO>::log("TX Aborted", LogLevel::DEBUG);
+                Objects::logger.log("TX Aborted", ModuleId::SERIAL_IO, LogLevel::DEBUG);
                 break;
             }
             case UART_RX_RDY: {
@@ -71,7 +71,7 @@ namespace Cloverwatch {
                 Vector<Byte> buffer(buf + offset, len, len);
 
                 if (! this_ptr->validation_queue.push(ToRead(buffer))) {
-                    Logger<ModuleId::SERIAL_IO>::log("Validation queue full", LogLevel::WARNING);
+                    Objects::logger.log("Validation Queue Full", ModuleId::SERIAL_IO, LogLevel::WARNING);
                 }
                 break;
             }
@@ -82,15 +82,15 @@ namespace Cloverwatch {
                 break;
             }
             case UART_RX_BUF_RELEASED: {
-                Logger<ModuleId::SERIAL_IO>::log("RX Buffer Released", LogLevel::DEBUG);
+                Objects::logger.log("RX Buffer Released", ModuleId::SERIAL_IO, LogLevel::DEBUG);
                 break;
             }
             case UART_RX_DISABLED: {
-                Logger<ModuleId::SERIAL_IO>::log("RX Disabled", LogLevel::DEBUG);
+                Objects::logger.log("RX Disabled", ModuleId::SERIAL_IO, LogLevel::DEBUG);
                 break;
             }
             case UART_RX_STOPPED: {
-                Logger<ModuleId::SERIAL_IO>::log("RX Stopped", LogLevel::DEBUG);
+                Objects::logger.log("RX Stopped", ModuleId::SERIAL_IO, LogLevel::DEBUG);
                 break;
                 }
         }
@@ -108,7 +108,7 @@ namespace Cloverwatch {
         int res = uart_rx_enable(L::dev, buffer_pair[instance.current_buffer].data(), L::dma_buffer_size, 1000000);
 
         if (res) {
-            Logger<ModuleId::SERIAL_IO>::log("Critical Error: UART not enabled", LogLevel::ERROR);
+            Objects::logger.log("Critical Error: UART not enabled", ModuleId::SERIAL_IO, LogLevel::ERROR);
         }
 
         instance.current_buffer = !instance.current_buffer;
@@ -134,10 +134,10 @@ namespace Cloverwatch {
         int res = uart_tx(L::dev, bytes.data(), bytes.len(), K_NO_WAIT.ticks);
 
         if (res == 0) {
-            Logger<ModuleId::SERIAL_IO>::log("TX Success", LogLevel::DEBUG);
+            Objects::logger.log("TX Success", ModuleId::SERIAL_IO, LogLevel::DEBUG);
         }
         else {
-            Logger<ModuleId::SERIAL_IO>::log("TX Failed", LogLevel::DEBUG);
+            Objects::logger.log("TX Failed", ModuleId::SERIAL_IO, LogLevel::DEBUG);
         }
     }
 

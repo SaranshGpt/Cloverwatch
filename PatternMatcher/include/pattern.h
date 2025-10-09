@@ -11,7 +11,6 @@
 #include "../../data_structures/include/c_types.h"
 #include "../../data_structures/include/c_heap_vec.h"
 #include "../../data_structures/include/mem_pool.h"
-#include "../../Config/system_config.h"
 #include "../../data_structures/include/c_heap_string.h"
 
 namespace Cloverwatch::Pattern {

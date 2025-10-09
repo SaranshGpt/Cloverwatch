@@ -8,6 +8,7 @@
 #include <pattern_stats.h>
 
 #include "../../CLI/include/cli.h"
+#include "../../Config/system_config.h"
 
 namespace Cloverwatch::Pattern {
 

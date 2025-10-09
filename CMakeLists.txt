@@ -15,6 +15,8 @@ target_link_libraries(app PRIVATE
         Serial_IO TaskManager Logger Validator PatternMatcher Cli
 )
 
+add_compile_options(-fwrapv)
+
 execute_process(
         COMMAND ${CMAKE_COMMAND} -E remove_directory
         "${CMAKE_CURRENT_SOURCE_DIR}/TesterDevice/libs/ssf_ecc"

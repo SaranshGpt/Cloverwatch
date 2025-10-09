@@ -9,6 +9,7 @@
 #include "../data_structures/include/c_types.h"
 #include "../PatternMatcher/include/pattern_stats.h"
 #include "../Serial_IO/include/serial_io.h"
+#include "../Logger/include/logger.h"
 
 #include <zephyr/device.h>
 #include <cstddef>
@@ -77,8 +78,14 @@ namespace Cloverwatch {
         };
     };
 
+    struct LoggerConfig {
+        CONFIG(size_t) max_entries = 50;
+    };
+
     struct Objects {
         static Pattern::StatTracker<GlobalConfig, PrimaryPatternConfig> primary_stats;
+        static Logger<GlobalConfig, LoggerConfig> logger;
+        using Serial_IO_Wire = Serial_DMAasync<GlobalConfig, SerialIOConfig>;
     };
 
 }

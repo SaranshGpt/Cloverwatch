@@ -74,6 +74,10 @@ namespace Cloverwatch {
             this->capacity_ = 0;
             this->len_ = 0;
         }
+
+        constexpr String& as_str() {
+            return *this;
+        }
     };
 
 }

@@ -9,6 +9,7 @@
 
 #include "../../CLI/include/cli.h"
 #include "../PatternMatcher/include/cli_funcs.h"
+#include "../Logger/include/cli_funcs.h"
 
 namespace Cloverwatch::Cli {
 

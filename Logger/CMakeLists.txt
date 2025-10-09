@@ -9,7 +9,7 @@ target_include_directories(
 
 target_sources(
         Logger PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/logger.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/cli_funcs.cpp"
 )
 
 target_link_libraries(

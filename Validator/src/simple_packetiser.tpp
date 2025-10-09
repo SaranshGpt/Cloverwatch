@@ -18,9 +18,10 @@
 
 namespace Cloverwatch {
 
-    static void log_error(const char *msg) {
+    template <size_t N>
+    inline static void log_error(const char (&msg)[N]) {
 #ifndef VALIDATOR_LOG_SKIP
-        Logger<ModuleId::VALIDATION_MODULE>::log(msg, LogLevel::ERROR);
+        Objects::logger.log(msg, ModuleId::VALIDATION_MODULE, LogLevel::ERROR);
 #endif
     };
 

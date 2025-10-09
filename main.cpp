@@ -14,7 +14,7 @@ namespace Cloverwatch {
         TaskManager::Instance().init();
         serial_io_wire_startup();
 
-        Logger<ModuleId::MAIN_THREAD>::log("Starting", LogLevel::INFO);
+        Objects::logger.log("Starting", ModuleId::MAIN_THREAD, LogLevel::INFO);
 
         while (true) {
             k_sleep(K_MSEC(1000));

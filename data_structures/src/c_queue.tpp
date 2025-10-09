@@ -29,8 +29,17 @@ namespace Cloverwatch {
     }
 
     template <typename T, size_t capacity>
-    bool CQueue_concurrent_SPSC<T, capacity>::push(T&& val) {
-        if (full()) return false;
+    bool CQueue_concurrent_SPSC<T, capacity>::push(T&& val, bool overwrite) {
+        if (full()) {
+            if (overwrite) {
+                size_t next_tail = tail.load();
+                circular_increment(next_tail, capacity);
+                tail = next_tail;
+            }
+            else {
+                return false;
+            }
+        }
 
         size_t head_copy = head.load();
         size_t next_head = head.load();
@@ -130,6 +139,59 @@ namespace Cloverwatch {
         return (size() == capacity);
     }
 
+    template <typename T, size_t capacity>
+    void CQueue_concurrent_MPMC<T, capacity>::init() {
+        mtx.init();
+    }
+
+    template <typename T, size_t capacity>
+    bool CQueue_concurrent_MPMC<T, capacity>::push(T&& val) {
+
+        auto lock = MutexLock(mtx);
+
+        ++back_ind;
+
+        if (front_ind == back_ind) {
+            --back_ind;
+            return false;
+        }
+
+        queue[front_ind] = std::move(val);
+
+        return true;
+    }
+
+    template <typename T, size_t capacity>
+    std::optional<T> CQueue_concurrent_MPMC<T, capacity>::pop() {
+        auto lock = MutexLock(mtx);
+
+        if (front_ind == back_ind) return std::nullopt;
+
+        auto val = std::move(queue[*front_ind]);
+        ++front_ind;
+        return val;
+    }
+
+    template<typename T, size_t capacity>
+    std::optional<T> CQueue_concurrent_MPMC<T, capacity>::displace(T &&val) {
+
+        auto lock = MutexLock(mtx);
+
+        ++back_ind;
+
+        if (back_ind == front_ind) {
+
+            auto ret = std::move(queue[*front_ind]);
+            ++front_ind;
+            queue[*front_ind] = std::move(val);
+
+            return ret;
+        }
+        else {
+            queue[*front_ind] = std::move(val);
+            return std::nullopt;
+        }
+    }
 
 
 }

@@ -9,18 +9,17 @@
 
 #include <zephyr/kernel.h>
 
+#include "circular_count.h"
+#include "c_mutex.h"
+
 namespace Cloverwatch {
-
-    class CQueue {
-
-    };
 
     template <typename T, size_t capacity>
     class CQueue_concurrent_SPSC {
     public:
 
         std::optional<T> pop();
-        bool push(T&& val);
+        bool push(T&& val, bool overwrite = false);
 
         size_t remaining_capacity() const;
         size_t size() const;
@@ -50,11 +49,11 @@ namespace Cloverwatch {
         std::optional<Byte> pop();
         void pop(WriteVector<Byte> buffer);
 
-        inline size_t remaining_capacity() const;
-        inline size_t size() const;
+        [[nodiscard]] [[gnu::always_inline]] inline size_t remaining_capacity() const;
+        [[nodiscard]] [[gnu::always_inline]] inline size_t size() const;
 
-        inline bool empty() const;
-        inline bool full() const;
+        [[nodiscard]] [[gnu::always_inline]] inline bool empty() const;
+        [[nodiscard]] [[gnu::always_inline]] inline bool full() const;
 
     private:
 
@@ -67,14 +66,16 @@ namespace Cloverwatch {
 
     };
 
-    template <typename T, uint16_t capacity>
+    template <typename T, size_t capacity>
     class CQueue_concurrent_MPMC {
     public:
 
         void init();
 
         bool push(T&& val);
-        void pop(WriteVector<T> &buffer);
+
+        std::optional<T> pop();
+        std::optional<T> displace(T&& val);
 
         CQueue_concurrent_MPMC() = default;
 
@@ -82,11 +83,10 @@ namespace Cloverwatch {
 
         std::array<T, capacity> queue;
 
-        struct k_mutex mutex;
+        Mutex mtx;
 
-        int head = 0;
-        int tail = 0;
-
+        CCount<size_t, capacity> front_ind;
+        CCount<size_t, capacity> back_ind;
     };
 
 }

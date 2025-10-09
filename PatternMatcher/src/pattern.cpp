@@ -8,6 +8,7 @@
 
 #include "../../Logger/include/logger.h"
 
+#include "../../Config/system_config.h"
 
 namespace Cloverwatch::Pattern {
 
@@ -82,8 +83,6 @@ namespace Cloverwatch::Pattern {
     }
 
     bool match_pattern(ReadVector<Byte> data_ref, Pattern& pattern) {
-
-        auto &data = data_ref.ref;
 
         FixedVector<bool, PrimaryPatternConfig::max_stack_size> stack;
 
@@ -213,7 +212,7 @@ namespace Cloverwatch::Pattern {
                 stack_size--;
 
             if (stack_size <= 0) {
-                Logger<ModuleId::PATTERN_MATCHER>::log("Invalid Notation Recieved");
+                Objects::logger.log("Invalid Notation Recieved", ModuleId::PATTERN_MATCHER, LogLevel::INFO);
                 pattern.free_memory();
                 return std::nullopt;
             }

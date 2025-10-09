@@ -7,5 +7,6 @@
 namespace Cloverwatch {
 
     Pattern::StatTracker<GlobalConfig, PrimaryPatternConfig> Objects::primary_stats;
+    Logger<GlobalConfig, LoggerConfig> Objects::logger;
 
 }

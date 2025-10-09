@@ -31,6 +31,25 @@ namespace Cloverwatch::Cli {
         using BOOL = bool;
     }
 
+    class Shell {
+        const shell* sh;
+    public:
+
+        enum class Level {
+            NORMAL = SHELL_NORMAL,
+            INFO = SHELL_INFO,
+            WARN = SHELL_WARNING,
+            ERROR = SHELL_ERROR
+        };
+
+        explicit Shell(const shell* sh): sh(sh) {}
+
+        template <Level level = Level::NORMAL, typename... Args>
+        [[gnu::always_inline]] inline void print(const char* fmt, Args... args) {
+            shell_fprintf(sh, static_cast<enum shell_vt100_color>(level), fmt, args...);
+        }
+    };
+
     template <typename T>
     bool parse_args(ReadRef<char*> arg, T& val, bool &res);
 
@@ -51,25 +70,6 @@ namespace Cloverwatch::Cli {
             (parse_args(ReadRef<char*>(*(curr_arg++)), std::get<Args>(args), res) && ...);
 
             return res;
-        }
-    };
-
-    class Shell {
-        const shell* sh;
-    public:
-
-        enum class Level {
-            NORMAL = SHELL_NORMAL,
-            INFO = SHELL_INFO,
-            WARN = SHELL_WARNING,
-            ERROR = SHELL_ERROR
-        };
-
-        explicit Shell(const shell* sh): sh(sh) {}
-
-        template <Level level = Level::NORMAL, typename... Args>
-        [[gnu::always_inline]] inline void print(const char* fmt, Args... args) {
-            shell_fprintf(sh, static_cast<enum shell_vt100_color>(level), fmt, args...);
         }
     };
 

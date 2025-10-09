@@ -52,7 +52,7 @@ namespace Cloverwatch::Pattern {
             return StatResult::OK;
         }
 
-        return StatResult::PATTERN_NOT_FOUND;
+        return StatResult::PATTERN_NOT_DEFINED;
     }
 
 }

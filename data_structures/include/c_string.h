@@ -91,6 +91,9 @@ namespace Cloverwatch {
 
         FixedStr(): String(buffer, buffer_size, 0) {}
 
+        template <size_t T>
+        constexpr FixedStr(const char (&str)[T]) : String(str, buffer_size, T-1) {}
+
         String& as_str() {
             return *this;
         }
