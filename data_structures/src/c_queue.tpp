@@ -140,11 +140,6 @@ namespace Cloverwatch {
     }
 
     template <typename T, size_t capacity>
-    void CQueue_concurrent_MPMC<T, capacity>::init() {
-        mtx.init();
-    }
-
-    template <typename T, size_t capacity>
     bool CQueue_concurrent_MPMC<T, capacity>::push(T&& val) {
 
         auto lock = MutexLock(mtx);

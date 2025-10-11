@@ -11,14 +11,11 @@ namespace Cloverwatch {
 
     class Mutex {
 
-        // ReSharper disable once CppUninitializedNonStaticDataMember
-        k_mutex mutex;
+        k_mutex mutex = Z_MUTEX_INITIALIZER(mutex);
 
     public:
 
-        void init() {
-            k_mutex_init(&mutex);
-        }
+        Mutex(k_mutex mutex): mutex(mutex) {}
 
         void lock() {
             k_mutex_lock(&mutex, K_FOREVER);

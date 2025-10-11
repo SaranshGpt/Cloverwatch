@@ -36,12 +36,20 @@ namespace Cloverwatch {
             return val;
         }
 
-        [[gnu::always_inline]] inline T& operator->() {
+        [[gnu::always_inline]] inline const T& operator*() const {
             return val;
         }
 
         [[gnu::always_inline]] inline bool operator==(const CCount<T, max>& other) {
             return val == other.val;
+        }
+
+        [[gnu::always_inline]] inline bool operator==(const T& other) {
+            return val == other.val;
+        }
+
+        [[gnu::always_inline]] inline bool operator!=(const CCount<T, max>& other) {
+            return val != other.val;
         }
 
     };

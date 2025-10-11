@@ -19,18 +19,26 @@ namespace Cloverwatch {
     inline void pattern_process_func(void* args) {
         auto &serial = Objects::Serial_IO_Wire::Instance();
 
-        if (auto packet = serial.pop(); packet.has_value()) {
+        auto packet = serial.pop();
 
-            auto& val = packet.value().as_vec();
+        if (packet.has_value()) {
 
-            Objects::primary_stats.add_packet(ToRead(val));
+            auto res = Objects::primary_stats.add_packet(ToRead(packet.value().as_vec()));
 
+             switch (res) {
+                 case Pattern::StatResult::OK:
+                     break;
+                 case Pattern::StatResult::INSUFFICIENT_CAPACITY:
+                     break;
+                 default:
+                     break;
+             }
         }
     }
 
     inline void pattern_setup() {
 
-        TaskManager::Task task = {
+        const TaskManager::Task task = {
             .func = pattern_process_func,
             .args = nullptr,
             .priority = TaskManager::Priority::MEDIUM

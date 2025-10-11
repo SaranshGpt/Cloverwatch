@@ -4,19 +4,18 @@
 
 #include "pattern_stats.h"
 #include "../../data_structures/include/c_linked_deque.h"
+#include "../../Config/system_config.h"
 
 #include "task_manager.h"
 
 namespace Cloverwatch::Pattern {
 
     template <typename G, typename L>
-    StatResult StatTracker<G, L>::add_packet(ReadVector<Byte> packet_ref) {
-
-        auto& packet = packet_ref.ref;
+    StatResult StatTracker<G, L>::add_packet(ReadVector<Byte> packet) {
 
         MutexLock lock(packet_mtx);
 
-        uint16_t packet_size = packet.len();
+        uint16_t packet_size = packet.ref.len();
         uint16_t bytes_written = 0;
 
         auto cleanup = [&]() {
@@ -34,14 +33,19 @@ namespace Cloverwatch::Pattern {
             return StatResult::INSUFFICIENT_CAPACITY;
         }
 
+        bytes_written ++;
+
         res = packet_queue.push_front(lsb);
         if (!res) {
             cleanup();
             return StatResult::INSUFFICIENT_CAPACITY;
         }
 
-        for (Byte byte: packet) {
+        bytes_written ++;
+
+        for (Byte byte: packet.ref) {
             res = packet_queue.push_back(byte);
+            bytes_written++;
             if (!res) {
                 cleanup();
                 return StatResult::INSUFFICIENT_CAPACITY;
@@ -54,12 +58,10 @@ namespace Cloverwatch::Pattern {
     template <typename G, typename L>
     StatResult StatTracker<G, L>::add_pattern(CopyStr name, ReadVector<Byte> notation) {
 
-        {
-            MutexLock lock(pattern_mtx);
-            for (auto& pattern: patterns) {
-                if (pattern.name == name) {
-                    return StatResult::PATTERN_ALREADY_DEFINED;
-                }
+        for (auto &pattern: patterns) {
+            auto lock = MutexLock(pattern.mtx);
+            if (pattern.name.as_str() == name.ref) {
+                return StatResult::PATTERN_ALREADY_DEFINED;
             }
         }
 
@@ -75,30 +77,32 @@ namespace Cloverwatch::Pattern {
             return StatResult::INSUFFICIENT_CAPACITY;
         }
 
-        {
-            MutexLock lock(pattern_mtx);
-            for (auto& pattern_info: patterns) {
-                if (pattern_info.defined == false) {
-                    pattern_info.name = name_cpy;
-                    pattern_info.defined = true;
-                    pattern_info.num_instances = 0;
-                    pattern_info.timestamps.clear();
-                    pattern_info.pattern = pattern;
-                    pattern_info.enabled = true;
-                    return StatResult::OK;
-                }
+        for (auto& pattern_info: patterns) {
+
+            if (pattern_info.defined == false) {
+
+                pattern_info.name = name_cpy;
+                pattern_info.defined = true;
+                pattern_info.num_instances = 0;
+                pattern_info.timestamps.clear();
+                pattern_info.pattern = pattern;
+                pattern_info.enabled = true;
+
+
+                return StatResult::OK;
             }
         }
+
 
         pattern.free_memory();
         return StatResult::INSUFFICIENT_CAPACITY;
     }
 
     template <typename G, typename L>
-    void StatTracker<G, L>::packet_process_func(void* instance) {
+    void StatTracker<G, L>::process_thread_func(void* instance) {
 
         auto this_ptr = static_cast<StatTracker<G, L> *>(instance);
-        auto &state = this_ptr->state;
+        auto &state = this_ptr->packet_state;
         auto &queue = this_ptr->packet_queue;
 
         {
@@ -113,10 +117,13 @@ namespace Cloverwatch::Pattern {
 
                 state.expected_bytes = byte;
 
-                if (state.step == PacketStep::MSB)
+                if (state.step == PacketStep::MSB) {
                     state.expected_bytes <<= 8;
-
-                ++state.step;
+                    state.step = PacketStep::LSB;
+                }
+                else {
+                    state.step = PacketStep::PACKET;
+                }
             }
 
             size_t bytes_read = std::min(state.expected_bytes, L::max_byte_processed);
@@ -128,20 +135,32 @@ namespace Cloverwatch::Pattern {
 
                 state.packet_buffer.push_back(byte);
             }
+
+            auto q_capacity = queue.capacity();
+
+            if (q_capacity < L::queue_min_reserved_space) {
+                auto res = queue.reserve(L::queue_max_reserved_space - q_capacity);
+
+                if (!res) {
+                    Objects::logger.log("Queue capacity reservation failed", ModuleId::PATTERN_MATCHER, LogLevel::ERROR);
+                }
+            }
         }
 
-        if (state.packet_buffer.size() == state.expected_bytes) {
+        auto curr_time = Time::UpTime();
 
-            MutexLock mtx(this_ptr->pattern_mtx);
+        if (state.packet_buffer.len() == state.expected_bytes) {
 
             for (auto &pattern: this_ptr->patterns) {
-                if (match_pattern(state.packet_buffer, pattern)) {
+                auto lock = MutexLock(pattern.mtx);
+
+                if (match_pattern(ToRead(state.packet_buffer.as_vec()), pattern.pattern)) {
                     ++pattern.num_instances;
 
                     if (pattern.timestamps.size() == L::history_length)
                         pattern.timestamps.pop();
 
-                    pattern.timestamps.push(Time::UpTime().milliseconds());
+                    pattern.timestamps.push(std::move(curr_time));
                 }
             }
 
@@ -153,17 +172,15 @@ namespace Cloverwatch::Pattern {
     template <typename G, typename L>
     void StatTracker<G, L>::start_process() {
 
-        packet_mtx.init();
-        pattern_mtx.init();
-        request_mtx.init();
-
         TaskManager::Task task = {
-            .func = packet_process_func,
+            .func = process_thread_func,
             .args = this,
-            .priority = L::thread::priority
+            .priority = L::thread.priority
         };
 
         TaskManager::Instance().forever_work_item(task, K_MSEC(1));
     }
 
 }
+
+#include "../compile_time_init/pattern_template_config.cpp"

@@ -5,7 +5,7 @@
 #include "pattern_setup.h"
 
 #include "CLI/include/cli.h"
-#include "Config/cli_config.h"
+#include "cli_setup.h"
 
 namespace Cloverwatch {
 
@@ -13,6 +13,7 @@ namespace Cloverwatch {
 
         TaskManager::Instance().init();
         serial_io_wire_startup();
+        pattern_setup();
 
         Objects::logger.log("Starting", ModuleId::MAIN_THREAD, LogLevel::INFO);
 

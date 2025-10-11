@@ -169,6 +169,10 @@ namespace Cloverwatch {
 
             return res;
         }
+
+        size_t capacity() {
+            return reserved_capacity;
+        }
     };
 
 }

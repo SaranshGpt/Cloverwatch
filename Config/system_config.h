@@ -44,9 +44,10 @@ namespace Cloverwatch {
         CONFIG(size_t) max_patterns = 10;
         CONFIG(size_t) heap_size = 20 * 1024;
         CONFIG(size_t) history_length = 10;
-        CONFIG(size_t) max_pattern_name_length = 50;
 
         CONFIG(size_t) max_byte_processed = 50;
+        CONFIG(size_t) queue_min_reserved_space = 3 * max_byte_processed;
+        CONFIG(size_t) queue_max_reserved_space = 10 * max_byte_processed;
 
         CONFIG(ThreadConfig) thread = {TaskManager::Priority::MEDIUM};
     };

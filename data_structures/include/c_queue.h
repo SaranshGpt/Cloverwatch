@@ -15,6 +15,68 @@
 namespace Cloverwatch {
 
     template <typename T, size_t capacity>
+    class CQueue {
+    public:
+
+        std::optional<T> pop() {
+            if (head == tail) {
+                return std::nullopt;
+            }
+
+            auto ret = queue[*tail];
+            ++tail;
+            return ret;
+        }
+        bool push(T val, bool overwrite = false) {
+            if (full()) {
+                if (!overwrite) return false;
+                pop();
+            }
+
+            queue[*head] = val;
+            ++head;
+            return true;
+        }
+
+        [[nodiscard]] size_t remaining_capacity() const {
+            return capacity - size();
+        }
+        [[nodiscard]] size_t size() const {
+            return (*tail - *head + capacity)%capacity;
+        }
+
+        [[nodiscard]] bool empty() const {
+            return (head == tail);
+        }
+        [[nodiscard]] bool full() const {
+            return size() == capacity;
+        }
+
+        void clear() {
+            *head = 0;
+            *tail = 0;
+        }
+
+        FixedVector<T, capacity> get_vec() {
+            FixedVector<T, capacity> ret;
+
+            CCount ind = head;
+            while (ind != tail) {
+                ret.push_back(queue[*ind]);
+                ++ind;
+            }
+
+            return ret;
+        }
+
+    private:
+
+        std::array<T, capacity> queue;
+        CCount<size_t, capacity> head;
+        CCount<size_t, capacity> tail;
+    };
+
+    template <typename T, size_t capacity>
     class CQueue_concurrent_SPSC {
     public:
 
@@ -26,6 +88,11 @@ namespace Cloverwatch {
 
         bool empty() const;
         bool full() const;
+
+        void clear() {
+            head = 0;
+            tail = 0;
+        }
 
     private:
 

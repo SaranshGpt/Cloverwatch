@@ -41,69 +41,52 @@ namespace Cloverwatch::Pattern {
 
         collapse_whitespace(ToWrite<String>(names));
 
-        size_t num_words = 1;
+        size_t num_words = 0;
 
-        for (size_t i=0; i<names.len(); i++)
+        for (size_t i=0; i < names.len(); i++) {
             num_words += names[i] == ' ';
+        }
 
-        auto requests = CliVector<StatRequest>(num_words);
+        Cli::Types::STR buffer;
+        buffer.realloc(names.len());
 
-        size_t prev_ind = 0;
-        FixedStr<PrimaryPatternConfig::max_pattern_name_length> pattern_name;
+        for (size_t i=0; i < names.len(); i++) {
 
-        for (size_t i=0; i<names.len(); i++) {
             if (names[i] == ' ') {
-                pattern_name.clear();
-                for (size_t j=prev_ind; j<i; j++)
-                    pattern_name.push_back(names[j]);
 
-                prev_ind = i + 1;
-                requests.push_back(StatRequest::create<&Cli::heap>(CopyStr(pattern_name.as_str()), PrimaryPatternConfig::max_pattern_name_length));
-            }
-        }
+                sh.print("Pattern %s\n", buffer.data());
 
-        auto& primary_stats = Objects::primary_stats;
+                size_t num_instances = 0;
+                FixedVector<Time, PrimaryPatternConfig::history_length> timestamps;
 
-        primary_stats.add_stat_request(ToWriteBuffer(requests.as_vec()));
+                auto res = Objects::primary_stats.get_pattern_info(ToRead(buffer.as_str()), ToWrite(num_instances), ToWrite(timestamps.as_vec()));
 
-        while (!primary_stats.clear_if_stat_request_fulfilled()) {
-            sleep(Time::FromMilliseconds(100));
-        }
-
-        for (auto& request: requests) {
-
-            sh.print("\nPattern: %s \n", request.name.data());
-
-            if (request.result != StatResult::OK) {
-                const char* error_str;
-
-                switch (request.result) {
-                    case StatResult::PATTERN_NOT_DEFINED :
-                        error_str = "Pattern with that name does not exist";
+                switch (res) {
+                    case StatResult::OK:
+                        sh.print("\tNum instances: %d\n", num_instances);
+                        sh.print("\tTimestamps: ");
+                        for (auto& timestamp: timestamps)
+                            sh.print(" %d", timestamp.milliseconds());
+                        sh.print("\n\n");
                         break;
-                    case StatResult::PATTERN_NOT_ENABLED :
-                        error_str = "Pattern is not enabled";
+                    case StatResult::PATTERN_NOT_DEFINED:
+                        sh.print<Cli::Shell::Level::ERROR>("Pattern with that name does not exist\n");
                         break;
                     default:
-                        error_str = "Unexpected error";
+                        sh.print<Cli::Shell::Level::ERROR>("Unexpected error\n");
+                        break;
                 }
-                sh.print<Cli::Shell::Level::WARN>("Error: %s\n", error_str);
+
+                buffer.clear();
                 continue;
             }
-            else {
-                sh.print("\tInstances since startup: %d\n", request.num_instances);
 
-                sh.print("\tTimestamps: ");
-                for (auto& timestamp: request.timestamps) {
-                    sh.print("%d ", timestamp);
-                }
-                sh.print("\n");
-            }
+            buffer.push_back(names[i]);
 
-            request.free<&Cli::heap>();
         }
 
         names.free();
+        buffer.free();
 
         return Cli::CommandRes::SUCCESS;
     }

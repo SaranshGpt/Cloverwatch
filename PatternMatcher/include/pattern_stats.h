@@ -31,38 +31,6 @@ namespace Cloverwatch::Pattern {
         PATTERN_ALREADY_DEFINED,
     };
 
-    struct StatRequest {
-        String name;
-        size_t num_instances = 0;
-        Vector<Time> timestamps;
-        StatResult result = StatResult::REQUEST_NOT_FULFILLED;
-
-        StatRequest() = default;
-
-        template <Heap* heap>
-        static StatRequest create(CopyStr name, size_t max_timestamps) {
-
-            auto request = StatRequest();
-
-            auto& heap_str = reinterpret_cast<HeapString<heap> &>(request.name);
-            auto& heap_vec = reinterpret_cast<HeapVector<Time, heap> &>(request.timestamps);
-
-            heap_str.copy_string(name);
-            heap_vec.realloc(max_timestamps);
-
-            return request;
-        }
-
-        template <Heap* heap>
-        void free() {
-            auto& heap_str = reinterpret_cast<HeapString<heap> &>(name);
-            auto& heap_vec = reinterpret_cast<HeapVector<Time, heap> &>(timestamps);
-
-            heap_str.free();
-            heap_vec.free();
-        }
-    };
-
     template <typename G, typename L>
     class StatTracker {
     public:
@@ -71,8 +39,7 @@ namespace Cloverwatch::Pattern {
 
         StatResult add_pattern(CopyStr name, ReadVector<Byte> notation);
 
-        StatResult add_stat_request(WriteBufferVector<StatRequest> stat_requests);
-        bool clear_if_stat_request_fulfilled();
+        StatResult get_pattern_info(ReadStr name, WriteRef<size_t> num_instances, WriteVector<Time> timestamps);
 
         StatResult set_pattern_enabled(ReadStr name, bool enabled);
 
@@ -82,14 +49,21 @@ namespace Cloverwatch::Pattern {
 
     private:
 
+        struct PatternHistory {
+            size_t num_instances = 0;
+            FixedVector<Time, L::history_length> timestamps;
+        };
+
         struct PatternInfo {
             PatternStr name;
             Pattern pattern;
             size_t num_instances = 0;
-            CQueue_concurrent_SPSC<Time, L::history_length> timestamps;
+            CQueue<Time, L::history_length> timestamps;
 
-            bool enabled = false;
-            bool defined = false;
+            std::atomic<bool> enabled{false};
+            std::atomic<bool> defined{false};
+
+            Mutex mtx;
         };
 
         enum class PacketStep {
@@ -100,20 +74,16 @@ namespace Cloverwatch::Pattern {
 
         struct PacketState {
             FixedBuffer<G::max_packet_size> packet_buffer;
-            uint16_t expected_bytes;
+            size_t expected_bytes;
             PacketStep step;
         } packet_state;
 
         CLinkedDeque<Byte, &pattern_heap, 128> packet_queue;
         FixedVector<PatternInfo, L::max_patterns> patterns;
 
-        Vector<StatRequest> *current_request = nullptr;
-
         Mutex packet_mtx;
-        Mutex pattern_mtx;
-        Mutex request_mtx;
 
-        static void packet_process_func(void* instance);
+        static void process_thread_func(void* instance);
     };
 
 }

@@ -4,6 +4,10 @@
 		io-wire = &uart1;
 		cli-wire = &uart0;
 	};
+
+	chosen {
+		zephyr,console = &uart0;
+	};
 };
 
 &uart0 {

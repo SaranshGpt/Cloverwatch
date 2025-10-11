@@ -74,6 +74,10 @@ namespace Cloverwatch {
 
             return true;
         }
+
+        bool operator!=(const String& other) const {
+            return !(*this == other);
+        }
     };
 
     using ReadStr = ReadRef<String>;

@@ -2,46 +2,50 @@
 // Created by saransh on 10/1/25.
 //
 
+#include <pattern_stats.h>
+
 #include "pattern_stats.h"
 
 namespace Cloverwatch::Pattern {
 
-    template <typename G, typename L>
-    StatResult StatTracker<G, L>::add_stat_request(WriteBufferVector<StatRequest> stat_requests) {
 
-        auto lock = MutexLock(request_mtx);
+    template<typename G, typename L>
+    StatResult StatTracker<G, L>::get_pattern_info(ReadStr name, WriteRef<size_t> num_instances, WriteVector<Time> timestamps) {
 
-        if (current_request) return StatResult::REQUEST_ALREADY_EXISTS;
+        for (auto& pattern: patterns) {
 
-        current_request = &stat_requests.ref;
-        return StatResult::OK;
-    }
+            pattern.mtx.lock();
+            if (!pattern.defined) continue;
+            if (name.ref != pattern.name.as_str()) continue;
 
-    template <typename G, typename L>
-    bool StatTracker<G, L>::clear_if_stat_request_fulfilled() {
-        auto lock = MutexLock(request_mtx);
+            num_instances.ref = pattern.num_instances;
+            auto timestamps_cpy = pattern.timestamps.get_vec();
 
-        for (auto& request: *current_request) {
-            if (request.result == StatResult::REQUEST_NOT_FULFILLED) {
-                return false;
+            pattern.mtx.unlock();
+
+            for (auto& timestamp: timestamps_cpy) {
+                timestamps.ref.push_back(timestamp);
             }
+
+            return StatResult::OK;
         }
 
-        current_request = nullptr;
+        return StatResult::PATTERN_NOT_DEFINED;
 
-        return true;
     }
+
 
     template<typename G, typename L>
     StatResult StatTracker<G, L>::set_pattern_enabled(ReadStr name, bool enabled) {
 
-        auto lock = MutexLock(pattern_mtx);
 
         for (auto& pattern: patterns) {
 
+            auto lock = MutexLock(pattern.mtx);
+
             if (!pattern.defined) continue;
 
-            if (name != pattern.name) continue;
+            if (name.ref != pattern.name.as_str()) continue;
 
             if (pattern.enabled == enabled) {
                 if (enabled) return StatResult::PATTERN_ALREADY_ENABLED;
@@ -56,3 +60,5 @@ namespace Cloverwatch::Pattern {
     }
 
 }
+
+#include "../compile_time_init/pattern_template_config.cpp"
